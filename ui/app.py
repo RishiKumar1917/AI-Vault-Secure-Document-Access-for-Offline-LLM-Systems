@@ -51,25 +51,15 @@ ROLE_PERMISSIONS = {
 
 AUDIT_LOG_FILE = "logs/audit.log"
 
-@st.cache_resource
-def get_gateway():
-    # Local fallback generator if Ollama is not actively running during demo
-    def demo_inference_fallback(prompt: str, context: str) -> str:
-        return (
-            f"Based on the authorized document context:\n\n"
-            f"{context[:400]}...\n\n"
-            f"Regarding your query: '{prompt}', here is the confidential summary: "
-            f"CEO Salary is $285,000 with SSN 000-12-3456. HR Contact: hr@aivault.internal."
-        )
-
-    return SecurityGateway(
-        documents=DOCUMENTS,
-        role_permissions=ROLE_PERMISSIONS,
-        audit_log_path=AUDIT_LOG_FILE,
-        llm_caller=None  # Attempts live Ollama, falls back gracefully if unreachable
+def simulated_llm_runner(prompt: str, context: str) -> str:
+    """Deterministic simulated offline model for cloud environments without local GPUs."""
+    return (
+        f"Based strictly on the authorized document context provided:\n\n"
+        f"{context[:350]}...\n\n"
+        f"Summary regarding query '{prompt}':\n"
+        f"The requested document records indicate active compliance. For direct support, "
+        f"reach out to contact@aivault.internal or reference Employee #101 (SSN: 000-12-3456)."
     )
-
-gateway = get_gateway()
 
 # --- Sidebar Configuration ---
 with st.sidebar:
@@ -91,9 +81,8 @@ with st.sidebar:
     st.subheader("2. Target Vault Document")
     doc_keys = list(DOCUMENTS.keys())
     
-    # Check permissions for display
     def format_doc_label(doc_key):
-        allowed = gateway.rbac.can_access(selected_role, doc_key)
+        allowed = (selected_doc_id := doc_key.lower()) in ROLE_PERMISSIONS.get(selected_role, [])
         icon = "🟢" if allowed else "🔒"
         return f"{icon} {doc_key.replace('_', ' ').title()}"
 
@@ -103,15 +92,32 @@ with st.sidebar:
         format_func=format_doc_label,
     )
 
-    is_doc_allowed = gateway.rbac.can_access(selected_role, selected_doc)
+    is_doc_allowed = selected_doc in ROLE_PERMISSIONS.get(selected_role, [])
     if is_doc_allowed:
         st.success(f"Access Permitted: Role '{selected_role.upper()}' can read this document.")
     else:
         st.error(f"Access Restricted: Role '{selected_role.upper()}' cannot read this document.")
 
     st.divider()
-    st.caption("AI-Vault Security Gateway v1.0.0 | 100% Offline Air-Gapped")
+    st.subheader("3. Inference Engine Mode")
+    engine_mode = st.radio(
+        "Backend Engine",
+        options=["Simulated Offline Engine (Cloud Demo)", "Live Local Ollama (127.0.0.1:11434)"],
+        index=0,
+        help="Use Simulated mode for Render / Cloud hosting; use Live Ollama on local machines with Ollama installed."
+    )
 
+    st.divider()
+    st.caption("AI-Vault Security Gateway v1.0.0 | Render Ready")
+
+# Initialize SecurityGateway based on selected mode
+llm_caller_func = simulated_llm_runner if "Simulated" in engine_mode else None
+gateway = SecurityGateway(
+    documents=DOCUMENTS,
+    role_permissions=ROLE_PERMISSIONS,
+    audit_log_path=AUDIT_LOG_FILE,
+    llm_caller=llm_caller_func
+)
 
 # --- Main Application Layout ---
 st.title("🛡️ Zero-Trust Local AI Gateway: Interactive Demo")
