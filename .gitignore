@@ -19,6 +19,7 @@ ENV/
 logs/
 *.log
 
-# Temp / OS
+# Temp / Local documents
+*.pdf
 .DS_Store
 Thumbs.db

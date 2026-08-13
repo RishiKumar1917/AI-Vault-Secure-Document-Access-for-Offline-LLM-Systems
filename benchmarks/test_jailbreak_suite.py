@@ -1,0 +1,1 @@
+"""Injection benchmark test runner."""
