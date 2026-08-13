@@ -1,7 +1,14 @@
 """Interactive Streamlit Demo Dashboard for AI-Vault."""
 
 import json
+import sys
 from pathlib import Path
+
+# Ensure project root is in sys.path for cloud hosts (Render / Streamlit Cloud)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import streamlit as st
 
 # Setup page configuration
@@ -58,7 +65,7 @@ def simulated_llm_runner(prompt: str, context: str) -> str:
         f"{context[:350]}...\n\n"
         f"Summary regarding query '{prompt}':\n"
         f"The requested document records indicate active compliance. For direct support, "
-        f"reach out to contact@aivault.internal or reference Employee #101 (SSN: 000-12-3456)."
+        f"reach out to contact@aivault.internal or reference Employee #101."
     )
 
 # --- Sidebar Configuration ---
