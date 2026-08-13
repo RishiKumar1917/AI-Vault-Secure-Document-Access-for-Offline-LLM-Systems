@@ -108,6 +108,8 @@ The gateway verifies that the LLM endpoint is bound strictly to `127.0.0.1`, `lo
 
 ## OWASP LLM Top 10 Coverage
 
+For an in-depth threat model and technical analysis of all 10 vulnerability categories, see the [Full OWASP LLM Top 10 Reference Guide](docs/OWASP_LLM_TOP_10.md).
+
 | OWASP Vulnerability | Risk Description | AI-Vault Mitigation |
 | :--- | :--- | :--- |
 | **LLM01: Prompt Injection** | User crafts inputs to hijack model instructions. | Heuristic regex inspection, delimiter isolation, canary tokens. |
@@ -124,6 +126,8 @@ AI-Vault-Secure-Document-Access-for-Offline-LLM-Systems/
 |   +-- workflows/
 |       |-- ci.yml                 # Automated pytest & linting
 |       +-- codeql.yml             # CodeQL vulnerability scanning
+|-- docs/
+|   +-- OWASP_LLM_TOP_10.md        # Comprehensive OWASP Threat Matrix & Guide
 |-- data/
 |   +-- sample_documents/          # Mock enterprise files
 |       |-- public_handbook.txt

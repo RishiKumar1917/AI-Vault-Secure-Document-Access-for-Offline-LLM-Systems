@@ -1,1 +1,14 @@
-# Public Employee Handbook
+# AI-Vault Technologies - Public Employee Handbook (2026)
+
+## Welcome to AI-Vault Technologies
+We are dedicated to building privacy-preserving, zero-trust artificial intelligence infrastructure for enterprise organizations worldwide.
+
+## Office Guidelines & Core Work Hours
+- Core working hours are 09:00 to 17:00 local time.
+- Flexible remote work is supported across all departments.
+- Standard corporate holidays: New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving, and Winter Break.
+
+## General Inquiries & Public Support
+- Public Helpdesk: contact@aivault.internal
+- Office Address: 100 Innovation Parkway, Suite 400, Tech City
+- Verification hotline: +1 (555) 019-2834

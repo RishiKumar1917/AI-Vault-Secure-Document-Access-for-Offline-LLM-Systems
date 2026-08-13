@@ -1,1 +1,14 @@
-# Engineering Architecture Specifications
+# AI-Vault Confidential Engineering Architecture Specifications
+
+## Classification: Restricted - Engineering & DevOps Only
+
+### Microservice Topologies
+- Gateway Service: Python FastAPI container bound to port 8000.
+- Inference Engine: Ollama offline daemon on port 11434 (`llama3.1:8b`).
+- Storage & Audit: Append-only JSONL files with SHA-256 cryptographic hash-chains.
+
+### Internal Service Endpoints & Mock Credentials (Test Data)
+- Database Staging Cluster: postgres://dbadmin:MockSecretPass987@10.0.4.12:5432/vault_stage
+- Internal AWS S3 Backup Key: AKIATESTKEYMOCK12345
+- Mock Internal API Key: key_demo_secret_token_1234567890abcdef
+- Staging Support Lead: devops-lead@aivault.internal

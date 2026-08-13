@@ -1,1 +1,13 @@
-# Q3 Payroll & Executive Compensation (Confidential)
+# Confidential Q3 Executive Payroll & Compensation Report
+
+## Classification: Strictly Confidential - HR & Executive Leadership Only
+
+### Executive Salaries & Bonuses (Q3)
+- Employee #101 (CEO - Eleanor Vance): Base Salary $285,000 | Q3 Performance Bonus $45,000 | SSN: 000-12-3456
+- Employee #102 (CTO - Marcus Chen): Base Salary $240,000 | Q3 Performance Bonus $35,000 | SSN: 111-23-4567
+- Employee #103 (VP HR - Sarah Jenkins): Base Salary $190,000 | Q3 Performance Bonus $20,000 | SSN: 222-34-5678
+- Employee #104 (Principal Security Architect): Base Salary $210,000 | Q3 Performance Bonus $25,000 | SSN: 333-45-6789
+
+### Direct Deposit Corporate Banking Info (Mock Data)
+- Corporate Treasury Account: 4111-2222-3333-4444
+- HR Director Direct Contact: hr-director@aivault.internal | Phone: (555) 018-9922
