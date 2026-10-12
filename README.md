@@ -205,7 +205,7 @@ pip install -r requirements.txt
 ```
 
 ### 4. Run Automated Test Suite
-Verify that all 21 security tests pass on your machine:
+Verify that all 22 security tests pass on your machine:
 ```bash
 python -m pytest tests/ -v
 ```
@@ -215,7 +215,7 @@ python -m pytest tests/ -v
 streamlit run ui/app.py
 ```
 Open your browser at `http://localhost:8501`:
-* **Persona Selector:** Toggle between Intern, Senior Engineer, HR Lead, CEO, and SysAdmin.
+* **Persona Selector:** Toggle between Priya Sharma (Intern, Noida), Arjun Mehta (Engineer, Pune), Pooja Iyer (HR, Bengaluru), Ananya Deshmukh (CEO), and Kabir Sen (DevSecOps, Gurgaon).
 * **Security Posture:** Switch between **Hardened (AI-Vault Protected)** and **Vulnerable (Baseline Leak)**.
 * **Database Explorer:** Browse live rows across all 9 enterprise tables.
 * **Audit Ledger:** Inspect cryptographic SHA-256 event blocks and verify mathematical ledger integrity.
@@ -228,21 +228,21 @@ Interactive OpenAPI documentation available at: `http://127.0.0.1:8000/docs`
 
 ---
 
-## Enterprise Database & Retrieval Engine
+## Enterprise Database & Humanized Indian Dataset
 
-AI-Vault includes an embedded **9-table SQLite Relational Database** (`data/software_company.db`) with **SQLite FTS5 (BM25 ranked full-text search)**:
+AI-Vault includes an embedded **9-table SQLite Relational Database** (`data/software_company.db`) with **SQLite FTS5 (BM25 ranked full-text search)**, fully humanized with realistic corporate identities, Indian Rupee compensation packages, employee age, office locations, and Indian mobile numbers:
 
 | Table | Classification | Permitted Roles | Content Highlights |
 | :--- | :--- | :--- | :--- |
-| `company_policies` | PUBLIC | All Roles | PTO, 40-hr hybrid schedule, air-gap AI policies |
-| `public_employee_directory` | INTERNAL | All Roles | 10 employee profiles, reporting hierarchy |
-| `customer_support_tickets` | INTERNAL | All Roles | Real customer tickets, webhook latency bugs |
-| `engineering_projects` | RESTRICTED | Engineer, Exec, Admin | Microservice topologies, staging DB strings, AWS keys |
-| `security_incident_reports` | RESTRICTED | Engineer, Admin | CVE audit reports (`CVE-2025-39182`), pentest audits |
-| `employee_payroll` | CONFIDENTIAL | HR, Exec, Admin | Base salaries, bonuses, SSNs, bank accounts |
-| `performance_reviews` | CONFIDENTIAL | HR, Exec, Admin | Manager ratings, flight risks, promotion flags |
-| `client_contracts_nda` | CONFIDENTIAL | Exec, Admin | Fortune 500 deals ($3.4M), $10M NDA breach penalties |
-| `cloud_infrastructure_keys` | TOP_SECRET | Admin Only | AWS master IAM roles, SSH bastion hosts, K8s secrets |
+| `company_policies` | PUBLIC | All Roles | PTO, 40-hr hybrid schedule, air-gap AI policies, ₹75,000 home office stipend |
+| `public_employee_directory` | INTERNAL | All Roles | 10 Indian employee profiles with **age**, **location** (Bengaluru, Mumbai, Pune, Hyderabad, Noida), and contact numbers |
+| `customer_support_tickets` | INTERNAL | All Roles | Real partner tickets (HDFC, Apollo, Tata, Reliance), webhook latency bugs |
+| `engineering_projects` | RESTRICTED | Engineer, Exec, Admin | Microservice topologies, staging DB strings, AWS keys, UPI payment gateway |
+| `security_incident_reports` | RESTRICTED | Engineer, Admin | CVE audit reports (`CVE-2025-39182`), lead responders (Kabir Sen, Vikram Patel) |
+| `employee_payroll` | CONFIDENTIAL | HR, Exec, Admin | Base salaries in **INR** (₹55 Lakhs to ₹4.8 Lakhs), bonuses, PAN cards, direct deposits |
+| `performance_reviews` | CONFIDENTIAL | HR, Exec, Admin | Manager ratings, flight risks, promotion readiness flags |
+| `client_contracts_nda` | CONFIDENTIAL | Exec, Admin | Enterprise contracts in **₹ Crores** (₹3.40 Cr value, ₹10 Cr liquidated damages) |
+| `cloud_infrastructure_keys` | TOP_SECRET | Admin Only | AWS master IAM roles, SSH bastion hosts, K8s cluster secrets |
 
 ---
 
