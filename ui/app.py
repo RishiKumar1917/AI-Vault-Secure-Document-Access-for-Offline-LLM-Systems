@@ -434,12 +434,17 @@ with tab_chat:
                 audit_hash = meta.get("audit_hash", "")
 
                 # Subtle status badge
+                engine_name = meta.get("engine", "")
+                engine_badge = f"<span class='role-pill' style='font-size:0.75rem; margin-left:6px; color:#a5b4fc; border:1px solid #6366f1; background:rgba(99,102,241,0.15);'>⚡ {engine_name}</span>" if engine_name else ""
+
                 if status == "ok" and reason == "vulnerable_baseline_leak":
-                    st.markdown("<span class='badge-vulnerable'>🔴 Vulnerable Leak (RBAC Bypassed)</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span class='badge-vulnerable'>🔴 Vulnerable Leak (RBAC Bypassed)</span> {engine_badge}", unsafe_allow_html=True)
+                elif status == "ok" and (not is_hardened or "unprotected" in reason):
+                    st.markdown(f"<span class='badge-vulnerable' style='background:rgba(234,88,12,0.15); border-color:#f97316; color:#fdba74;'>🟡 Unprotected Baseline</span> {engine_badge}", unsafe_allow_html=True)
                 elif status == "ok":
-                    st.markdown("<span class='badge-allowed'>🟢 Protected (AI-Vault Enforced)</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span class='badge-allowed'>🟢 Protected (AI-Vault Enforced)</span> {engine_badge}", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<span class='badge-blocked'>🔒 Blocked ({reason.upper()})</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span class='badge-blocked'>🔒 Blocked ({reason.upper()})</span> {engine_badge}", unsafe_allow_html=True)
 
                 if accessed or blocked:
                     with st.expander("🔍 Security Telemetry Details", expanded=False):
@@ -477,13 +482,17 @@ with tab_chat:
             accessed = result.get("accessed_tables", [])
             blocked = result.get("blocked_tables", [])
             audit_hash = result.get("audit_hash", "")
+            engine_name = result.get("engine", "")
+            engine_badge = f"<span class='role-pill' style='font-size:0.75rem; margin-left:6px; color:#a5b4fc; border:1px solid #6366f1; background:rgba(99,102,241,0.15);'>⚡ {engine_name}</span>" if engine_name else ""
 
             if status == "ok" and reason == "vulnerable_baseline_leak":
-                st.markdown("<span class='badge-vulnerable'>🔴 Vulnerable Leak (RBAC Bypassed)</span>", unsafe_allow_html=True)
+                st.markdown(f"<span class='badge-vulnerable'>🔴 Vulnerable Leak (RBAC Bypassed)</span> {engine_badge}", unsafe_allow_html=True)
+            elif status == "ok" and (not is_hardened or "unprotected" in reason):
+                st.markdown(f"<span class='badge-vulnerable' style='background:rgba(234,88,12,0.15); border-color:#f97316; color:#fdba74;'>🟡 Unprotected Baseline</span> {engine_badge}", unsafe_allow_html=True)
             elif status == "ok":
-                st.markdown("<span class='badge-allowed'>🟢 Protected (AI-Vault Enforced)</span>", unsafe_allow_html=True)
+                st.markdown(f"<span class='badge-allowed'>🟢 Protected (AI-Vault Enforced)</span> {engine_badge}", unsafe_allow_html=True)
             else:
-                st.markdown(f"<span class='badge-blocked'>🔒 Blocked ({reason.upper()})</span>", unsafe_allow_html=True)
+                st.markdown(f"<span class='badge-blocked'>🔒 Blocked ({reason.upper()})</span> {engine_badge}", unsafe_allow_html=True)
 
             if accessed or blocked:
                 with st.expander("🔍 Security Telemetry Details", expanded=False):

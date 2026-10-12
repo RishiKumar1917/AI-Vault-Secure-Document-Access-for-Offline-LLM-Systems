@@ -281,15 +281,20 @@ class SecurityGateway:
                 },
             )
 
+            leak_detected = bool(search_res["accessed_tables"])
             result = {
                 "status": "ok",
-                "reason": "vulnerable_baseline_leak",
+                "reason": "vulnerable_baseline_leak" if leak_detected else "unprotected_general_query",
                 "response": raw_response,
-                "engine": "Unprotected Baseline LLM",
+                "engine": engine_used,
                 "accessed_tables": search_res["accessed_tables"],
                 "blocked_tables": [],
                 "audit_hash": event_dict.get("hash"),
-                "message": "[VULNERABLE MODE] All database tables were accessed without RBAC or DLP redactions."
+                "message": (
+                    "[VULNERABLE MODE] All database tables were accessed without RBAC or DLP redactions."
+                    if leak_detected
+                    else "[VULNERABLE MODE] Direct local LLM query with authorization gates bypassed."
+                )
             }
             if session_id:
                 save_chat_message(session_id=session_id, sender="assistant", content=raw_response, metadata=result)

@@ -857,8 +857,20 @@ def auto_search_database(
 
     target_tables: List[str] = []
 
-    # 1. SQLite FTS5 BM25 Search
-    fts_words = [w for w in re.findall(r'[a-zA-Z0-9]+', prompt) if len(w) > 2]
+    # 1. SQLite FTS5 BM25 Search (filtered of common conversational stopwords)
+    stopwords = {
+        "the", "and", "is", "in", "it", "to", "of", "for", "with", "on", "at", "from",
+        "by", "about", "as", "into", "like", "through", "after", "over", "between", "out",
+        "against", "during", "without", "before", "under", "around", "among", "what", "whats",
+        "who", "whos", "where", "wheres", "when", "whens", "why", "how", "all", "any",
+        "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not",
+        "only", "own", "same", "so", "than", "too", "very", "can", "will", "just", "should",
+        "now", "rightnow", "going", "tell", "show", "give", "please", "me", "my", "you", "your",
+        "this", "that", "these", "those", "am", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "there"
+    }
+    raw_words = [w.lower() for w in re.findall(r'[a-zA-Z0-9]+', prompt) if len(w) > 2]
+    fts_words = [w for w in raw_words if w not in stopwords]
     if fts_words:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -934,8 +946,12 @@ def auto_search_database(
         if "public_employee_directory" not in target_tables:
             target_tables.append("public_employee_directory")
 
-    # Fallback to general tables if nothing matched
-    if not target_tables:
+    # Only fallback to general policies/directory if inquiry is actually about the company/workplace
+    company_inquiry_keywords = [
+        "company", "nexus", "policy", "handbook", "rules", "guidelines",
+        "work", "office", "internal", "systems", "organization", "procedure", "general"
+    ]
+    if not target_tables and any(k in query_lower for k in company_inquiry_keywords):
         target_tables = ["company_policies", "public_employee_directory"]
 
     # Filter tables through RBAC

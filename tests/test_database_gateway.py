@@ -107,3 +107,11 @@ def test_process_chat_query_with_session_persistence(test_gateway):
     assert history[0]["sender"] == "user"
     assert history[1]["sender"] == "assistant"
 
+
+def test_general_knowledge_query_does_not_force_company_policies(test_gateway):
+    """Verify general knowledge queries do not mistakenly match company policies or directory tables."""
+    from gateway.database import auto_search_database
+    res = auto_search_database("Whats going on in the Pakistan rightnow", "intern", unprotected_mode=True)
+    assert res["accessed_tables"] == []
+    assert res["authorized_context"] == ""
+
