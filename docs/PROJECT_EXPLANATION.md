@@ -51,6 +51,7 @@ If an Intern asks for the CEO's salary, **AI-Vault's security gateway checks the
 When an employee types a query into AI-Vault, the request passes through 6 strict gates:
 
 ```
+
 [Employee Prompt]
        │
        ▼

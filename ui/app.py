@@ -283,6 +283,12 @@ st.markdown("""
         border: 1px solid rgba(6, 182, 212, 0.3);
         white-space: nowrap !important;
     }
+    .badge-neutral {
+        background: rgba(148, 163, 184, 0.12);
+        color: #94a3b8;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        white-space: nowrap !important;
+    }
     .badge-engineer {
         background: rgba(99, 102, 241, 0.15);
         color: #a5b4fc;
@@ -788,8 +794,10 @@ with tab_chat:
                 # Sleek inline badge
                 if status == "ok" and reason == "vulnerable_baseline_leak":
                     st.markdown("<span class='badge-pill badge-vulnerable'>⚠️ Vulnerable Leak (RBAC Bypassed)</span>", unsafe_allow_html=True)
+                elif status == "ok" and reason == "general_query":
+                    st.markdown("<span class='badge-pill badge-neutral'>💬 General Inquiry</span>", unsafe_allow_html=True)
                 elif status == "ok" and (not is_hardened or "unprotected" in reason):
-                    st.markdown("<span class='badge-pill badge-vulnerable'>🟡 Baseline Output</span>", unsafe_allow_html=True)
+                    st.markdown("<span class='badge-pill badge-neutral'>🟡 Baseline Output</span>", unsafe_allow_html=True)
                 elif status == "ok":
                     st.markdown("<span class='badge-pill badge-protected'>🛡️ Zero-Trust Enforced</span>", unsafe_allow_html=True)
                 else:
@@ -834,8 +842,10 @@ with tab_chat:
 
             if status == "ok" and reason == "vulnerable_baseline_leak":
                 st.markdown("<span class='badge-pill badge-vulnerable'>⚠️ Vulnerable Leak (RBAC Bypassed)</span>", unsafe_allow_html=True)
+            elif status == "ok" and reason == "general_query":
+                st.markdown("<span class='badge-pill badge-neutral'>💬 General Inquiry</span>", unsafe_allow_html=True)
             elif status == "ok" and (not is_hardened or "unprotected" in reason):
-                st.markdown("<span class='badge-pill badge-vulnerable'>🟡 Baseline Output</span>", unsafe_allow_html=True)
+                st.markdown("<span class='badge-pill badge-neutral'>🟡 Baseline Output</span>", unsafe_allow_html=True)
             elif status == "ok":
                 st.markdown("<span class='badge-pill badge-protected'>🛡️ Zero-Trust Enforced</span>", unsafe_allow_html=True)
             else:

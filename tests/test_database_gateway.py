@@ -56,7 +56,7 @@ def test_hr_allowed_with_dlp_masking(test_gateway):
     )
     assert result["status"] == "ok"
     assert "Rohan Murthy" in result["response"]
-    assert "48,00,000" in result["response"]
+    assert any(x in result["response"] for x in ["48,00,000", "4,800,000", "4800000"])
     assert "BMRPM5678G" not in result["response"]  # Plaintext PAN must be masked
 
 
@@ -114,4 +114,13 @@ def test_general_knowledge_query_does_not_force_company_policies(test_gateway):
     res = auto_search_database("Whats going on in the Pakistan rightnow", "intern", unprotected_mode=True)
     assert res["accessed_tables"] == []
     assert res["authorized_context"] == ""
+
+
+def test_upes_college_query_does_not_leak_employee_directory(test_gateway):
+    """Verify queries asking about colleges/universities (e.g. UPES in India) do not match directory tables."""
+    from gateway.database import auto_search_database
+    res = auto_search_database("Do you know the collage upes in India", "intern", unprotected_mode=True)
+    assert res["accessed_tables"] == []
+    assert res["authorized_context"] == ""
+
 

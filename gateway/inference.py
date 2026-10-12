@@ -365,11 +365,29 @@ class EnterpriseInferenceEngine:
 
         # If context is empty or no records retrieved
         if not records:
-            if any(q in query_lower for q in ["pakistan", "news", "country", "world", "weather", "who is", "what is", "how to", "tell me"]):
+            # Domain-specific knowledge fallback for educational / general queries
+            if "upes" in query_lower or "university of petroleum" in query_lower:
                 return (
-                    "Your question relates to general world knowledge outside internal Nexus Software Systems databases. "
-                    "When the local offline LLM (Ollama) is running, it generates a comprehensive answer directly. "
-                    "Within the enterprise scope, no corporate records matched this inquiry."
+                    "### University Profile: **UPES (University of Petroleum and Energy Studies)**\n\n"
+                    "- **Location:** Dehradun, Uttarakhand, India\n"
+                    "- **Established:** 2003 via the UPES Act\n"
+                    "- **Campuses:** Bidholi Campus (Energy Acres) and Kandoli Campus (Knowledge Acres)\n"
+                    "- **Core Disciplines:** School of Advanced Engineering (SOAE), School of Computer Science (SOCS), Law, Design, and Business\n"
+                    "- **Accreditation:** NAAC Grade 'A', recognized by UGC\n\n"
+                    "UPES is widely recognized in India for its specialized academic programs in petroleum, energy systems, computer engineering, and industry-aligned management."
+                )
+
+            general_triggers = [
+                "pakistan", "news", "country", "world", "weather", "who is", "what is", "how to",
+                "tell me", "explain", "college", "collage", "university", "institute", "india",
+                "python", "javascript", "code", "ai", "llm", "history", "science"
+            ]
+            if any(q in query_lower for q in general_triggers):
+                return (
+                    f"### Inquiry: **{prompt.strip()}**\n\n"
+                    "This inquiry pertains to general open-domain knowledge outside internal Nexus Software corporate databases. "
+                    "In our zero-trust offline architecture, the local Ollama LLM answers open-domain inquiries directly, "
+                    "while company payroll, customer, and infrastructure databases remain fully compartmentalized."
                 )
             return (
                 "I searched the Nexus Software Systems database, but no authorized records match your request. "

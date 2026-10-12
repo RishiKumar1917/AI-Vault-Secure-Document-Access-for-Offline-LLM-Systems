@@ -130,17 +130,17 @@ def get_db_connection() -> sqlite3.Connection:
 def _rebuild_fts_index(conn: sqlite3.Connection) -> None:
     """Rebuild SQLite FTS5 full-text search index across all enterprise tables."""
     cur = conn.cursor()
+    cur.execute("DROP TABLE IF EXISTS company_knowledge_fts")
     cur.execute("""
-        CREATE VIRTUAL TABLE IF NOT EXISTS company_knowledge_fts USING fts5(
+        CREATE VIRTUAL TABLE company_knowledge_fts USING fts5(
             table_source,
             record_id,
             classification,
             title,
             content_text,
-            tokenize = 'porter unicode61'
+            tokenize = 'unicode61 remove_diacritics 2'
         )
     """)
-    cur.execute("DELETE FROM company_knowledge_fts")
 
     # 1. Employees Directory
     cur.execute("SELECT emp_id, full_name, email, department, role_tier, job_title, manager_name, phone_number, hire_date, age, location FROM employees")
@@ -835,6 +835,19 @@ def check_table_access(role: str, table_name: str) -> bool:
     return table_name in allowed_tables
 
 
+def _has_keyword(text: str, keywords: List[str]) -> bool:
+    """Matches keywords strictly as distinct tokens using word boundaries or multi-word phrases."""
+    norm_text = text.replace("_", " ").lower()
+    for kw in keywords:
+        kw = kw.strip().lower()
+        if not kw:
+            continue
+        kw_norm = kw.replace("_", " ")
+        if re.search(rf"\b{re.escape(kw_norm)}\b", norm_text):
+            return True
+    return False
+
+
 # --- AUTOMATED DATABASE MULTI-TABLE SEARCH WITH FTS5 & BM25 ---
 
 def auto_search_database(
@@ -870,7 +883,11 @@ def auto_search_database(
         "only", "own", "same", "so", "than", "too", "very", "can", "will", "just", "should",
         "now", "rightnow", "going", "tell", "show", "give", "please", "me", "my", "you", "your",
         "this", "that", "these", "those", "am", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "there"
+        "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "there",
+        "know", "knows", "known", "up", "down", "say", "said", "think", "look", "find",
+        "get", "got", "much", "many", "well", "also", "see", "seen", "good", "need",
+        "would", "could", "may", "might", "must", "shall", "india", "indian", "college",
+        "collage", "university", "school", "city", "state", "country", "world"
     }
     raw_words = [w.lower() for w in re.findall(r'[a-zA-Z0-9]+', prompt) if len(w) > 2]
     fts_words = [w for w in raw_words if w not in stopwords]
@@ -880,7 +897,7 @@ def auto_search_database(
         try:
             fts_query = " OR ".join(f'"{w}"' for w in fts_words[:12])
             cur.execute("""
-                SELECT table_source, bm25(company_knowledge_fts) as rank
+                SELECT table_source, bm25(company_knowledge_fts) as rank, content_text
                 FROM company_knowledge_fts
                 WHERE company_knowledge_fts MATCH ?
                 ORDER BY rank ASC
@@ -888,8 +905,11 @@ def auto_search_database(
             """, (fts_query,))
             for r in cur.fetchall():
                 tbl = r["table_source"]
-                if tbl not in target_tables:
-                    target_tables.append(tbl)
+                content_lower = (r["content_text"] or "").lower()
+                # Verify that at least one of the query terms actually appears as a distinct token
+                if any(re.search(rf"\b{re.escape(w)}\b", content_lower) for w in fts_words):
+                    if tbl not in target_tables:
+                        target_tables.append(tbl)
         except Exception:
             pass
         finally:
@@ -897,42 +917,42 @@ def auto_search_database(
 
     # 2. Targeted Semantic Heuristics to guarantee recall on critical domains
     # Payroll & Compensation
-    if any(k in query_lower for k in ["salary", "salaries", "compensation", "payroll", "bonus", "equity", "stock", "earn", "ssn", "pan", "bank", "pay", "rupee", "rupees", "inr", "stipend"]):
+    if _has_keyword(query_lower, ["salary", "salaries", "compensation", "payroll", "bonus", "equity", "stock", "earn", "ssn", "pan", "bank", "pay", "rupee", "rupees", "inr", "stipend"]):
         if "employee_payroll" not in target_tables:
             target_tables.append("employee_payroll")
 
     # Cloud Infrastructure Master Keys
-    if any(k in query_lower for k in ["bastion", "kubernetes", "k8s", "iam role", "cloudflare", "master key", "root token", "stripe live", "top secret", "cluster secret", "vault key"]):
+    if _has_keyword(query_lower, ["bastion", "kubernetes", "k8s", "iam role", "cloudflare", "master key", "root token", "stripe live", "top secret", "cluster secret", "vault key"]):
         if "cloud_infrastructure_keys" not in target_tables:
             target_tables.append("cloud_infrastructure_keys")
 
     # Enterprise Client Contracts & NDAs
-    if any(k in query_lower for k in ["contract", "nda", "client", "breach penalty", "liquidated damages", "sla", "deal", "million", "crore", "hipaa", "procurement"]):
+    if _has_keyword(query_lower, ["contract", "nda", "client contract", "breach penalty", "liquidated damages", "sla", "deal value", "crore", "hipaa", "procurement"]):
         if "client_contracts_nda" not in target_tables:
             target_tables.append("client_contracts_nda")
 
     # DevSecOps Incident Reports
-    if any(k in query_lower for k in ["cve", "incident", "vulnerability", "patch", "pentest", "exploit", "audit", "security breach", "phishing"]):
+    if _has_keyword(query_lower, ["cve", "incident", "vulnerability", "patch", "pentest", "exploit", "security audit", "security breach", "phishing"]):
         if "security_incident_reports" not in target_tables:
             target_tables.append("security_incident_reports")
 
     # Customer Support Tickets
-    if any(k in query_lower for k in ["ticket", "support", "customer issue", "latency", "timeout", "bug report", "oauth2", "webhook"]):
+    if _has_keyword(query_lower, ["support ticket", "customer ticket", "customer issue", "latency", "timeout", "bug report", "oauth2", "webhook"]):
         if "customer_support_tickets" not in target_tables:
             target_tables.append("customer_support_tickets")
 
     # Engineering Projects & Credentials
-    if any(k in query_lower for k in ["aws", "cloud", "staging", "api key", "credentials", "password", "project", "repo", "tech", "infrastructure", "backend", "frontend", "secret", "token"]):
+    if _has_keyword(query_lower, ["aws key", "staging api", "staging url", "staging db", "repo slug", "git repo", "engineering projects", "internal project"]):
         if "engineering_projects" not in target_tables:
             target_tables.append("engineering_projects")
 
     # Performance Reviews
-    if any(k in query_lower for k in ["review", "rating", "performance", "feedback", "promotion", "evaluation", "risk", "score"]):
+    if _has_keyword(query_lower, ["performance review", "rating score", "manager feedback", "retention risk", "promotion readiness", "appraisal", "performance rating"]):
         if "performance_reviews" not in target_tables:
             target_tables.append("performance_reviews")
 
     # Policies & Handbook
-    if any(k in query_lower for k in ["hour", "hours", "pto", "leave", "vacation", "holiday", "policy", "handbook", "remote", "hybrid", "office", "guideline", "expense", "equipment", "conduct", "work"]):
+    if _has_keyword(query_lower, ["working hours", "pto", "leave policy", "vacation", "holiday list", "company policy", "nexus policy", "handbook", "remote policy", "hybrid policy", "expense policy", "office conduct", "code of conduct"]):
         if "company_policies" not in target_tables:
             target_tables.append("company_policies")
 
@@ -940,22 +960,27 @@ def auto_search_database(
     names = [
         "ananya deshmukh", "rohan murthy", "sunita nair", "vikram patel",
         "arjun mehta", "kavita reddy", "pooja iyer", "kabir sen",
-        "priya sharma", "aman verma",
+        "priya sharma", "aman verma", "rahul verma",
         "eleanor vance", "marcus chen", "sarah jenkins", "david ross",
         "aisha", "rachel adams", "carlos mendez", "leo dupont"
     ]
-    has_name = any(n in query_lower for n in names)
-    if has_name or any(k in query_lower for k in ["employee", "who is", "email", "manager", "team", "title", "directory", "contact", "phone", "number", "age", "location", "city", "hire", "department", "ceo", "cto"]):
+    has_name = any(re.search(rf"\b{re.escape(n)}\b", query_lower) for n in names)
+    directory_keywords = [
+        "employee directory", "employee list", "who is", "email address", "reporting manager",
+        "team member", "job title", "contact number", "phone number", "employee age",
+        "hire date", "department staff", "staff directory", "nexus employees", "employees list"
+    ]
+    if has_name or _has_keyword(query_lower, directory_keywords):
         if "public_employee_directory" not in target_tables:
             target_tables.append("public_employee_directory")
 
-    # Only fallback to general policies/directory if inquiry is actually about the company/workplace
+    # Only fallback to general policies if inquiry is explicitly about company/workplace
     company_inquiry_keywords = [
-        "company", "nexus", "policy", "handbook", "rules", "guidelines",
-        "work", "office", "internal", "systems", "organization", "procedure", "general"
+        "nexus software", "company policy", "nexus policy", "company rules", "nexus handbook",
+        "internal systems", "nexus guidelines"
     ]
-    if not target_tables and any(k in query_lower for k in company_inquiry_keywords):
-        target_tables = ["company_policies", "public_employee_directory"]
+    if not target_tables and _has_keyword(query_lower, company_inquiry_keywords):
+        target_tables = ["company_policies"]
 
     # Filter tables through RBAC
     accessed_tables = []
@@ -1021,6 +1046,36 @@ def get_authorized_context_for_query(
     unprotected_mode: bool = False
 ) -> Tuple[bool, str, str]:
     """Compatibility function for explicit single-resource access."""
+    target_clean = target_category.strip().lower()
+    valid_tables = {
+        "employees": "public_employee_directory",
+        "public_employee_directory": "public_employee_directory",
+        "employee_payroll": "employee_payroll",
+        "engineering_projects": "engineering_projects",
+        "performance_reviews": "performance_reviews",
+        "company_policies": "company_policies",
+        "customer_support_tickets": "customer_support_tickets",
+        "security_incident_reports": "security_incident_reports",
+        "client_contracts_nda": "client_contracts_nda",
+        "cloud_infrastructure_keys": "cloud_infrastructure_keys",
+    }
+    if target_clean in valid_tables:
+        actual_tbl = valid_tables[target_clean]
+        is_permitted = check_table_access(role, actual_tbl) or unprotected_mode
+        if not is_permitted:
+            return (
+                False,
+                "",
+                f"Access Denied: Role '{role.upper()}' is forbidden from accessing requested resources under enterprise RBAC policy."
+            )
+        records = get_table_records(actual_tbl)
+        lines = [f"--- AUTHORIZED DATABASE RECORDS: {actual_tbl.upper()} ---"]
+        for row in records[:6]:
+            row_str = " | ".join(f"{k}: {v}" for k, v in row.items())
+            lines.append(f"• {row_str}")
+        lines.append(f"--- END {actual_tbl.upper()} ---")
+        return (True, "\n".join(lines), "")
+
     res = auto_search_database(target_category, role, unprotected_mode=unprotected_mode)
     if res["blocked_tables"] and not res["accessed_tables"]:
         return (

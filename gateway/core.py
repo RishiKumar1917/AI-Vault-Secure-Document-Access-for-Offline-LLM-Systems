@@ -285,13 +285,17 @@ class SecurityGateway:
             context = search_res["authorized_context"]
             raw_response, engine_used = self._invoke_inference_with_meta(prompt, context, "CANARY_NONE", user=user)
             
+            leak_detected = bool(search_res["accessed_tables"])
+            outcome_reason = "vulnerable_baseline_leak" if leak_detected else "general_query"
+            doc_id = "multi_table_database" if leak_detected else "general_inquiry"
+
             event_dict = self.audit_logger.log_event(
                 username=user.username,
                 role=user.role,
-                document_id="multi_table_database",
+                document_id=doc_id,
                 prompt=prompt,
                 outcome="allowed",
-                reason="vulnerable_baseline_leak",
+                reason=outcome_reason,
                 response=raw_response,
                 redactions_applied=False,
                 extra_metadata={
@@ -301,19 +305,18 @@ class SecurityGateway:
                 },
             )
 
-            leak_detected = bool(search_res["accessed_tables"])
             result = {
                 "status": "ok",
-                "reason": "vulnerable_baseline_leak" if leak_detected else "unprotected_general_query",
+                "reason": outcome_reason,
                 "response": raw_response,
                 "engine": engine_used,
                 "accessed_tables": search_res["accessed_tables"],
                 "blocked_tables": [],
                 "audit_hash": event_dict.get("hash"),
                 "message": (
-                    "[VULNERABLE MODE] All database tables were accessed without RBAC or DLP redactions."
+                    "[VULNERABLE MODE] Internal database tables were accessed without RBAC or DLP redactions."
                     if leak_detected
-                    else "[VULNERABLE MODE] Direct local LLM query with authorization gates bypassed."
+                    else "[VULNERABLE MODE] General knowledge query answered directly by local LLM without accessing internal database records."
                 )
             }
             if session_id:
@@ -414,13 +417,16 @@ class SecurityGateway:
             redacted_res += f"\n\n*(Note: Additional records from `{', '.join(blocked_tables)}` were restricted under your active `{user.role.upper()}` role).* "
 
         # 7. Tamper-Evident SHA-256 Audit Log
+        hardened_reason = "general_query" if not accessed_tables else "ok"
+        hardened_doc_id = f"auto_{'_'.join(accessed_tables)}" if accessed_tables else "general_inquiry"
+
         event_dict = self.audit_logger.log_event(
             username=user.username,
             role=user.role,
-            document_id=f"auto_{'_'.join(accessed_tables) if accessed_tables else 'none'}",
+            document_id=hardened_doc_id,
             prompt=redacted_prompt,
             outcome="allowed",
-            reason="ok",
+            reason=hardened_reason,
             response=redacted_res,
             redactions_applied=(prompt_redactions or response_redactions),
             extra_metadata={
@@ -434,7 +440,7 @@ class SecurityGateway:
 
         result = {
             "status": "ok",
-            "reason": "ok",
+            "reason": hardened_reason,
             "response": redacted_res,
             "engine": engine_used,
             "accessed_tables": accessed_tables,
