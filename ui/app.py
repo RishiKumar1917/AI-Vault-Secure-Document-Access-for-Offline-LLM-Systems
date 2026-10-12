@@ -583,13 +583,12 @@ with st.sidebar:
         st.session_state["logged_in_user"] = None
         st.rerun()
 
-    # 2. Security Mode Card
+    # 2. Security Mode
     st.markdown(
         """
-        <div class="sidebar-section-card">
-            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 4px;">
-                🛡️ Security Perimeter
-            </div>
+        <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-top: 8px; margin-bottom: 4px;">
+            🛡️ Security Perimeter
+        </div>
         """,
         unsafe_allow_html=True
     )
@@ -607,39 +606,28 @@ with st.sidebar:
         st.markdown("<span class='badge-pill badge-protected'>🟢 Zero-Trust Active</span>", unsafe_allow_html=True)
     else:
         st.markdown("<span class='badge-pill badge-vulnerable'>🔴 Vulnerable Demo Mode</span>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 3. Local Ollama LLM Card
+    # 3. Local Ollama LLM Status Box
+    status_color = "#34d399" if is_llm_online else "#f87171"
+    status_bg = "rgba(16,185,129,0.1)" if is_llm_online else "rgba(239,68,68,0.1)"
+    status_border = "rgba(16,185,129,0.25)" if is_llm_online else "rgba(239,68,68,0.25)"
+    status_text = "🟢 ONLINE & READY" if is_llm_online else "🔴 OFFLINE / FALLBACK"
+    status_sub = f"Model: <code>{active_llm_model}</code><br>Latency: {llm_latency_ms}ms • 100% Offline" if is_llm_online else "Using rule-based response engine."
+
     st.markdown(
-        """
-        <div class="sidebar-section-card">
-            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 4px;">
+        f"""
+        <div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 12px; margin-top: 10px; margin-bottom: 6px;">
+            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 6px;">
                 🤖 Local Ollama LLM
             </div>
+            <div style="background: {status_bg}; border: 1px solid {status_border}; border-radius: 8px; padding: 10px 12px; font-size: 0.78rem;">
+                <div style="color: {status_color}; font-weight: 700; margin-bottom: 4px;">{status_text}</div>
+                <div style="color: #cbd5e1; font-size: 0.76rem; line-height: 1.5;">{status_sub}</div>
+            </div>
+        </div>
         """,
         unsafe_allow_html=True
     )
-    if is_llm_online:
-        st.markdown(
-            f"""
-            <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem;">
-                <div style="color: #34d399; font-weight: 700;">🟢 ONLINE & READY</div>
-                <div style="color: #cbd5e1; margin-top: 2px;">Model: <code>{active_llm_model}</code></div>
-                <div style="color: #94a3b8; font-size: 0.72rem; margin-top: 2px;">Latency: {llm_latency_ms}ms • 100% Offline</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            """
-            <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem;">
-                <div style="color: #f87171; font-weight: 700;">🔴 OFFLINE / FALLBACK</div>
-                <div style="color: #94a3b8; font-size: 0.72rem;">Using rule-based response engine.</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
 
     col_p1, col_p2 = st.columns(2)
     with col_p1:
@@ -652,15 +640,13 @@ with st.sidebar:
             st.session_state["active_session_id"] = f"session_{current_username}"
             create_chat_session(st.session_state["active_session_id"], current_username, current_role, "Workspace Chat")
             st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 4. Background Color Theme Selector Card
+    # 4. Background Color Theme Selector
     st.markdown(
         """
-        <div class="sidebar-section-card">
-            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 4px;">
-                🎨 Background Theme
-            </div>
+        <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-top: 10px; margin-bottom: 4px;">
+            🎨 Background Theme
+        </div>
         """,
         unsafe_allow_html=True
     )
@@ -673,7 +659,6 @@ with st.sidebar:
     if theme_choice != st.session_state.get("app_theme"):
         st.session_state["app_theme"] = theme_choice
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
     # 5. Advanced Settings Card
     with st.expander("⚙️ Advanced API Settings", expanded=False):
