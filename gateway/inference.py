@@ -61,6 +61,17 @@ PERSONA_PROFILES: Dict[str, Dict[str, str]] = {
         "age": "31",
         "location": "Pune, Maharashtra",
     },
+    "rahul.verma": {
+        "full_name": "Rahul Verma",
+        "title": "Full-Stack Software Engineer (Core Systems)",
+        "department": "Engineering",
+        "role": "engineer",
+        "manager": "Arjun Mehta",
+        "email": "rahul.verma@nexussoftware.internal",
+        "phone": "+91 98712 34560",
+        "age": "26",
+        "location": "Bengaluru, Karnataka",
+    },
     "pooja.iyer": {
         "full_name": "Pooja Iyer",
         "title": "HR Operations & Payroll Lead",

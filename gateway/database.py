@@ -422,6 +422,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
         ("EMP-108", "Kabir Sen", "kabir.sen@nexussoftware.internal", "IT & Security", "admin", "Senior DevSecOps & SysAdmin", "Rohan Murthy", "+91 98112 34567", "2022-09-01", 34, "Gurgaon, Haryana"),
         ("EMP-109", "Priya Sharma", "priya.sharma@nexussoftware.internal", "Engineering", "intern", "Software Engineering Intern (Backend)", "Arjun Mehta", "6204567867", "2026-06-01", 21, "Noida, Uttar Pradesh"),
         ("EMP-110", "Aman Verma", "aman.verma@nexussoftware.internal", "Engineering", "intern", "QA & Security Automation Intern", "Kabir Sen", "+91 70112 34290", "2026-06-01", 22, "Pune, Maharashtra"),
+        ("EMP-111", "Rahul Verma", "rahul.verma@nexussoftware.internal", "Engineering", "engineer", "Full-Stack Software Engineer (Core Systems)", "Arjun Mehta", "+91 98712 34560", "2023-08-15", 26, "Bengaluru, Karnataka"),
     ]
     cur.executemany("INSERT OR REPLACE INTO employees VALUES (?,?,?,?,?,?,?,?,?,?,?)", employees_data)
 
@@ -436,6 +437,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
         (8, "EMP-108", "Kabir Sen", 2700000, 350000, 35000, "HKSKS9012N", "5512"),
         (9, "EMP-109", "Priya Sharma", 480000, 35000, 0, "IPSPS3456P", "9041"),
         (10, "EMP-110", "Aman Verma", 480000, 35000, 0, "JAVAV7890Q", "3429"),
+        (11, "EMP-111", "Rahul Verma", 1850000, 250000, 30000, "KRVPV4567R", "1128"),
     ]
     cur.executemany("INSERT OR REPLACE INTO employee_payroll VALUES (?,?,?,?,?,?,?,?)", payroll_data)
 
@@ -481,6 +483,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
         (2, "EMP-105", "Arjun Mehta", "2026-Q2", 4.4, "Solid delivery on billing resiliency and NPCI/UPI integrations. Received a competitive external offer from Fintech rival, retention bonus suggested.", "MEDIUM", "MAINTAIN_ROLE"),
         (3, "EMP-109", "Priya Sharma", "2026-Midterm", 4.8, "Exceptional intern performance in Noida team. Quickly solved asynchronous queue bottlenecks. Strong candidate for full-time offer.", "LOW", "CONVERT_FULLTIME"),
         (4, "EMP-110", "Aman Verma", "2026-Midterm", 3.2, "Requires closer mentorship on security boundaries and CI/CD pipelines. Missed two test milestones.", "HIGH", "NEEDS_IMPROVEMENT"),
+        (5, "EMP-111", "Rahul Verma", "2026-Q2", 4.7, "Exceptional core systems coder. Shipped high-throughput payment microservices ahead of schedule. Nominated for Tech Lead track.", "LOW", "PROMOTION_READY"),
     ]
     cur.executemany("INSERT OR REPLACE INTO performance_reviews VALUES (?,?,?,?,?,?,?,?)", reviews_data)
 

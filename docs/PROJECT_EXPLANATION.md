@@ -40,7 +40,7 @@ If an Intern asks for the CEO's salary, **AI-Vault's security gateway checks the
 | **Ollama (127.0.0.1:11434)** | Local LLM Runtime | Runs completely air-gapped on the machine's loopback interface. Zero network egress. It provides a clean REST API without requiring internet connectivity or recurring cloud subscription fees. |
 | **Dolphin-Uncensored / Llama** | Language Model Backbone | Open-weights, uncensored model. Crucial for security research because safety-aligned cloud models (like GPT-4) refuse to process security benchmarks. Dolphin allows us to test raw boundary exploits and prove that our **external gateway** provides security, not the model's internal alignment. |
 | **SQLite with FTS5** | Enterprise Relational Database | Built into Python standard library (`sqlite3`). Uses **Full-Text Search 5 (FTS5)** with BM25 ranking for rapid retrieval without needing heavy vector databases like Pinecone or ChromaDB. Zero cloud dependencies, reproducible everywhere. |
-| **Streamlit** | Interactive User Workspace | Extremely fast, reactive Python frontend. Allows evaluators and users to switch employee personas (Intern, Engineer, HR, Admin), toggle Vulnerable vs. Hardened modes, inspect live telemetry badges, and test prompts in real-time. |
+| **Streamlit** | Interactive User Workspace | Extremely fast, reactive Python frontend. Allows evaluators and users to switch employee personas (Priya - Intern, Rahul - Coder/Engineer, Arjun - Senior Engineer, Pooja - HR, Ananya - CEO, Kabir - Admin), toggle Vulnerable vs. Hardened modes, inspect live telemetry badges, and test prompts in real-time. |
 | **SHA-256 Merkle Hash Chain** | Tamper-Evident Audit Logging | Cryptographically links each audit record to the preceding record (`Hash_n = SHA256(Hash_{n-1} + Payload)`). Provides mathematical non-repudiation: guarantees logs cannot be altered after a breach. |
 | **Custom Dual-Phase DLP Engine** | Data Loss Prevention | Regex-based pattern matching customized for enterprise data (Indian PAN cards `[A-Z]{5}[0-9]{4}[A-Z]`, 10-digit mobile numbers `+91 / [6-9]`, API secrets). Operates in microseconds with zero latency overhead. |
 
@@ -56,7 +56,7 @@ When an employee types a query into AI-Vault, the request passes through 6 stric
        ▼
 ┌────────────────────────────────────────────────────────┐
 │ Stage 1: Identity & Role Binding                       │
-│ Resolves employee identity: Intern, Engineer, HR, Admin│
+│ Resolves employee identity: Intern, Coder, HR, CEO, etc│
 └──────────────────────┬─────────────────────────────────┘
                        │
                        ▼

@@ -418,6 +418,17 @@ PERSONAS = {
         "summary": "Least-privilege intern account. Can view handbook & public tickets. Blocked from payroll and cloud keys.",
         "test_question": "What are our core working hours and remote guidelines?",
     },
+    "Rahul Verma (Coder / Systems Engineer)": {
+        "full_name": "Rahul Verma",
+        "username": "rahul.verma",
+        "role": "engineer",
+        "title": "Full-Stack Software Engineer",
+        "location": "Bengaluru",
+        "avatar": "👨‍💻",
+        "badge_class": "badge-engineer",
+        "summary": "Core systems coder & API developer. Clearance for code repos, staging endpoints, microservices, and tickets. Blocked from payroll & cloud keys.",
+        "test_question": "What is the tech stack and staging credentials for payment projects?",
+    },
     "Arjun Mehta (Senior Engineer)": {
         "full_name": "Arjun Mehta",
         "username": "arjun.mehta",
