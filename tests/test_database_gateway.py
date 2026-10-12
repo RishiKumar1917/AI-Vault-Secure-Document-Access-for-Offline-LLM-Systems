@@ -43,20 +43,35 @@ def test_intern_leaks_in_vulnerable_mode(test_gateway):
     )
     assert result["status"] == "ok"
     assert result["reason"] == "vulnerable_baseline_leak"
-    assert any(x in result["response"] for x in ["Eleanor Vance", "EMP-101", "320,000"])
+    assert any(x in result["response"] for x in ["Ananya Deshmukh", "EMP-101", "55,00,000"])
 
 
 def test_hr_allowed_with_dlp_masking(test_gateway):
-    user = User(username="sarah_hr", role="hr")
+    user = User(username="sunita_hr", role="hr")
     result = test_gateway.process_query(
         user=user,
         document_id="employee_payroll",
-        prompt="What is Marcus Chen salary and SSN?",
+        prompt="What is Rohan Murthy salary and PAN card?",
         defense_mode="hardened",
     )
     assert result["status"] == "ok"
-    assert "Marcus Chen" in result["response"]
-    assert "111-22-3344" not in result["response"]  # Plaintext SSN must be masked
+    assert "Rohan Murthy" in result["response"]
+    assert "48,00,000" in result["response"]
+    assert "BMRPM5678G" not in result["response"]  # Plaintext PAN must be masked
+
+
+def test_directory_query_returns_age_location_and_indian_phone(test_gateway):
+    user = User(username="priya_intern", role="intern")
+    result = test_gateway.process_chat_query(
+        user=user,
+        prompt="What is Priya Sharma's contact number, age, location, and manager?",
+        defense_mode="hardened",
+    )
+    assert result["status"] == "ok"
+    assert "Priya Sharma" in result["response"]
+    assert "21" in result["response"]
+    assert "Noida" in result["response"]
+    assert ("6204567867" in result["response"] or "[REDACTED_PHONE]" in result["response"])
 
 
 def test_prompt_injection_blocked_even_for_admin(test_gateway):

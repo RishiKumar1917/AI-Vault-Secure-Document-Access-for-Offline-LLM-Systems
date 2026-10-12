@@ -18,7 +18,10 @@ class DLPManager:
             r"\b(?:\d[ -]*?){13,16}\b"
         ),
         "PHONE": re.compile(
-            r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+            r"\b(?:\+?91[\s-]?)?[6-9]\d{9}\b|\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+        ),
+        "PAN_CARD": re.compile(
+            r"\b[A-Z]{5}[0-9]{4}[A-Z]\b"
         ),
         "AWS_KEY": re.compile(
             r"\bAKIA[0-9A-Z]{16}\b"

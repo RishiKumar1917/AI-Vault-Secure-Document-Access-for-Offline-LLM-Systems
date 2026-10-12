@@ -11,6 +11,31 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+def format_inr(val: Any) -> str:
+    """Format an integer or numeric string into Indian Rupees (e.g. ₹55,00,000)."""
+    try:
+        num = int(val)
+    except Exception:
+        return f"₹{val}"
+
+    s = str(abs(num))
+    if len(s) <= 3:
+        formatted = s
+    else:
+        last3 = s[-3:]
+        rest = s[:-3]
+        groups = []
+        while len(rest) > 2:
+            groups.insert(0, rest[-2:])
+            rest = rest[:-2]
+        if rest:
+            groups.insert(0, rest)
+        formatted = ",".join(groups) + "," + last3
+
+    prefix = "-₹" if num < 0 else "₹"
+    return f"{prefix}{formatted}"
+
+
 # Known persona profiles for Nexus Software Systems
 PERSONA_PROFILES: Dict[str, Dict[str, str]] = {
     "priya.sharma": {
@@ -18,40 +43,100 @@ PERSONA_PROFILES: Dict[str, Dict[str, str]] = {
         "title": "Software Engineering Intern (Backend)",
         "department": "Engineering",
         "role": "intern",
-        "manager": "David Ross",
+        "manager": "Arjun Mehta",
         "email": "priya.sharma@nexussoftware.internal",
+        "phone": "6204567867",
+        "age": "21",
+        "location": "Noida, Uttar Pradesh",
     },
-    "david.ross": {
-        "full_name": "David Ross",
+    "arjun.mehta": {
+        "full_name": "Arjun Mehta",
         "title": "Senior Backend Engineer (Payments)",
         "department": "Engineering",
         "role": "engineer",
         "manager": "Vikram Patel",
-        "email": "david.ross@nexussoftware.internal",
+        "email": "arjun.mehta@nexussoftware.internal",
+        "phone": "+91 98902 34567",
+        "age": "31",
+        "location": "Pune, Maharashtra",
     },
-    "rachel.adams": {
-        "full_name": "Rachel Adams",
+    "pooja.iyer": {
+        "full_name": "Pooja Iyer",
         "title": "HR Operations & Payroll Lead",
         "department": "Human Resources",
         "role": "hr",
-        "manager": "Sarah Jenkins",
-        "email": "rachel.adams@nexussoftware.internal",
+        "manager": "Sunita Nair",
+        "email": "pooja.iyer@nexussoftware.internal",
+        "phone": "+91 98401 23456",
+        "age": "32",
+        "location": "Bengaluru, Karnataka",
     },
-    "eleanor.vance": {
-        "full_name": "Eleanor Vance",
+    "ananya.deshmukh": {
+        "full_name": "Ananya Deshmukh",
         "title": "Chief Executive Officer (CEO)",
         "department": "Executive",
         "role": "executive",
         "manager": "Board of Directors",
-        "email": "eleanor.vance@nexussoftware.internal",
+        "email": "ananya.deshmukh@nexussoftware.internal",
+        "phone": "+91 98201 54321",
+        "age": "44",
+        "location": "Bengaluru, Karnataka",
     },
-    "carlos.mendez": {
-        "full_name": "Carlos Mendez",
+    "kabir.sen": {
+        "full_name": "Kabir Sen",
         "title": "Senior DevSecOps & SysAdmin",
         "department": "IT & Security",
         "role": "admin",
-        "manager": "Marcus Chen",
-        "email": "carlos.mendez@nexussoftware.internal",
+        "manager": "Rohan Murthy",
+        "email": "kabir.sen@nexussoftware.internal",
+        "phone": "+91 98112 34567",
+        "age": "34",
+        "location": "Gurgaon, Haryana",
+    },
+    # Backwards-compatibility aliases for legacy accounts
+    "david.ross": {
+        "full_name": "Arjun Mehta",
+        "title": "Senior Backend Engineer (Payments)",
+        "department": "Engineering",
+        "role": "engineer",
+        "manager": "Vikram Patel",
+        "email": "arjun.mehta@nexussoftware.internal",
+        "phone": "+91 98902 34567",
+        "age": "31",
+        "location": "Pune, Maharashtra",
+    },
+    "rachel.adams": {
+        "full_name": "Pooja Iyer",
+        "title": "HR Operations & Payroll Lead",
+        "department": "Human Resources",
+        "role": "hr",
+        "manager": "Sunita Nair",
+        "email": "pooja.iyer@nexussoftware.internal",
+        "phone": "+91 98401 23456",
+        "age": "32",
+        "location": "Bengaluru, Karnataka",
+    },
+    "eleanor.vance": {
+        "full_name": "Ananya Deshmukh",
+        "title": "Chief Executive Officer (CEO)",
+        "department": "Executive",
+        "role": "executive",
+        "manager": "Board of Directors",
+        "email": "ananya.deshmukh@nexussoftware.internal",
+        "phone": "+91 98201 54321",
+        "age": "44",
+        "location": "Bengaluru, Karnataka",
+    },
+    "carlos.mendez": {
+        "full_name": "Kabir Sen",
+        "title": "Senior DevSecOps & SysAdmin",
+        "department": "IT & Security",
+        "role": "admin",
+        "manager": "Rohan Murthy",
+        "email": "kabir.sen@nexussoftware.internal",
+        "phone": "+91 98112 34567",
+        "age": "34",
+        "location": "Gurgaon, Haryana",
     },
 }
 
@@ -173,13 +258,19 @@ class EnterpriseInferenceEngine:
         if any(q in query_lower for q in [
             "what is my name", "whats my name", "who am i", "my name",
             "what is my role", "whats my role", "my job title", "my manager",
-            "who is my manager", "what department am i", "my email"
+            "who is my manager", "what department am i", "my email", "my age", "my location", "my phone"
         ]):
             if profile:
+                age_str = f"- **Age:** {profile.get('age')} years\n" if profile.get('age') else ""
+                loc_str = f"- **Location:** {profile.get('location')}\n" if profile.get('location') else ""
+                phone_str = f"- **Contact Number:** `{profile.get('phone')}`\n" if profile.get('phone') else ""
                 return (
                     f"You are currently logged in as **{profile['full_name']}**.\n\n"
                     f"- **Job Title:** {profile['title']}\n"
                     f"- **Department:** {profile['department']}\n"
+                    f"{age_str}"
+                    f"{loc_str}"
+                    f"{phone_str}"
                     f"- **Security Classification:** `{profile['role'].upper()}`\n"
                     f"- **Reporting Manager:** {profile['manager']}\n"
                     f"- **Corporate Email:** `{profile['email']}`\n\n"
@@ -258,10 +349,10 @@ class EnterpriseInferenceEngine:
         if contract_items:
             output = ["### [Enterprise Contracts] Client Service Agreements & NDAs\n"]
             for p in contract_items:
-                val = f"${int(p.get('annual_contract_value', 0)):,}" if p.get('annual_contract_value', '').isdigit() else p.get('annual_contract_value', 'N/A')
+                val = format_inr(p.get('annual_contract_value', 0)) if p.get('annual_contract_value', '').isdigit() else p.get('annual_contract_value', 'N/A')
                 output.append(
                     f"**{p.get('client_name', 'Client')}** *({p.get('industry', 'Enterprise')})*\n"
-                    f"- **Annual Contract Value:** {val}\n"
+                    f"- **Annual Contract Value:** {val} (INR)\n"
                     f"- **Renewal Date:** {p.get('renewal_date', 'N/A')} *(Signed: {p.get('sign_date', 'N/A')})*\n"
                     f"- **Procurement Contact:** `{p.get('primary_contact_email', 'N/A')}`\n"
                     f"- **NDA Breach Penalty:** **{p.get('nda_breach_penalty', 'N/A')}**\n"
@@ -270,52 +361,39 @@ class EnterpriseInferenceEngine:
             return "\n".join(output)
 
         # ---------------------------------------------------------------------
-        # 6. DevSecOps Incident & Vulnerability Audits
-        # ---------------------------------------------------------------------
-        incident_items = [p for p in parsed_rows if "cve_reference" in p or "mitigation_status" in p]
-        if incident_items:
-            output = ["### [DevSecOps Audits] Security Incidents & Vulnerability Findings\n"]
-            for p in incident_items:
-                output.append(
-                    f"**{p.get('title', 'Security Incident')}** (`{p.get('cve_reference', 'CVE')}`)\n"
-                    f"- **Severity:** `{p.get('severity', 'MEDIUM')}` | **Status:** `{p.get('mitigation_status', 'RESOLVED')}`\n"
-                    f"- **Affected Service:** {p.get('affected_service', 'N/A')}\n"
-                    f"- **Lead Responder:** {p.get('lead_responder', 'N/A')}\n"
-                    f"- **Findings Summary:** *{p.get('findings_summary', '')}*\n"
-                )
-            return "\n".join(output)
-
-        # ---------------------------------------------------------------------
-        # 7. Customer Support Tickets
-        # ---------------------------------------------------------------------
-        ticket_items = [p for p in parsed_rows if "customer_account" in p and "issue_summary" in p]
-        if ticket_items:
-            output = ["### [Customer Support] Active Engineering Support Tickets\n"]
-            for p in ticket_items:
-                output.append(
-                    f"**Ticket `{p.get('ticket_id', 'TKT')}`: {p.get('customer_account', 'Account')}**\n"
-                    f"- **Priority:** `{p.get('priority', 'MEDIUM')}` | **Status:** `{p.get('resolution_status', 'OPEN')}`\n"
-                    f"- **Assigned Engineer:** {p.get('assigned_engineer', 'Unassigned')}\n"
-                    f"- **Issue Summary:** {p.get('issue_summary', '')}\n"
-                    f"- **Logged Date:** {p.get('created_date', '')}\n"
-                )
-            return "\n".join(output)
-
-        # ---------------------------------------------------------------------
-        # 8. Specific Person Queries (e.g., "What is Marcus Chen's salary?")
+        # 6. Specific Person Queries (e.g., "What is Priya Sharma's phone/salary?")
         # ---------------------------------------------------------------------
         person_names = [
-            ("eleanor vance", "Eleanor Vance"),
-            ("marcus chen", "Marcus Chen"),
-            ("sarah jenkins", "Sarah Jenkins"),
+            ("ananya deshmukh", "Ananya Deshmukh"),
+            ("ananya", "Ananya Deshmukh"),
+            ("rohan murthy", "Rohan Murthy"),
+            ("rohan", "Rohan Murthy"),
+            ("sunita nair", "Sunita Nair"),
+            ("sunita", "Sunita Nair"),
             ("vikram patel", "Vikram Patel"),
-            ("david ross", "David Ross"),
-            ("aisha al-mansoor", "Aisha Al-Mansoor"),
-            ("aisha", "Aisha Al-Mansoor"),
-            ("rachel adams", "Rachel Adams"),
-            ("carlos mendez", "Carlos Mendez"),
+            ("vikram", "Vikram Patel"),
+            ("arjun mehta", "Arjun Mehta"),
+            ("arjun", "Arjun Mehta"),
+            ("kavita reddy", "Kavita Reddy"),
+            ("kavita", "Kavita Reddy"),
+            ("pooja iyer", "Pooja Iyer"),
+            ("pooja", "Pooja Iyer"),
+            ("kabir sen", "Kabir Sen"),
+            ("kabir", "Kabir Sen"),
             ("priya sharma", "Priya Sharma"),
-            ("leo dupont", "Leo Dupont"),
+            ("priya", "Priya Sharma"),
+            ("aman verma", "Aman Verma"),
+            ("aman", "Aman Verma"),
+            # Aliases for backwards compatibility:
+            ("eleanor vance", "Ananya Deshmukh"),
+            ("marcus chen", "Rohan Murthy"),
+            ("sarah jenkins", "Sunita Nair"),
+            ("david ross", "Arjun Mehta"),
+            ("aisha al-mansoor", "Kavita Reddy"),
+            ("aisha", "Kavita Reddy"),
+            ("rachel adams", "Pooja Iyer"),
+            ("carlos mendez", "Kabir Sen"),
+            ("leo dupont", "Aman Verma"),
         ]
 
         matched_person_canon = None
@@ -324,32 +402,32 @@ class EnterpriseInferenceEngine:
                 matched_person_canon = canon_name
                 break
 
-        if matched_person_canon:
+        if matched_person_canon and not any(w in query_lower for w in ["ticket", "support", "incident", "cve"]):
             person_rows = [
                 (raw, p) for raw, p in zip(records, parsed_rows)
                 if matched_person_canon.lower() in raw.lower()
             ]
 
             # Salary / Compensation Query for Specific Person
-            if any(w in query_lower for w in ["salary", "compensation", "payroll", "bonus", "equity", "earn", "paid"]):
+            if any(w in query_lower for w in ["salary", "compensation", "payroll", "bonus", "equity", "earn", "paid", "rupee", "rupees", "inr"]):
                 payroll_matches = [
                     (raw, p) for raw, p in person_rows
                     if "base_salary" in p or "base_salary" in raw
                 ]
                 if payroll_matches:
                     raw, p = payroll_matches[0]
-                    base = f"${int(p.get('base_salary', 0)):,}" if p.get('base_salary', '').isdigit() else p.get('base_salary', 'N/A')
-                    bonus = f"${int(p.get('performance_bonus', 0)):,}" if p.get('performance_bonus', '').isdigit() else p.get('performance_bonus', 'N/A')
+                    base = format_inr(p.get('base_salary', 0))
+                    bonus = format_inr(p.get('performance_bonus', 0))
                     equity = f"{int(p.get('equity_grant_units', 0)):,} units" if p.get('equity_grant_units', '').isdigit() else p.get('equity_grant_units', 'N/A')
-                    ssn = p.get('ssn', '[REDACTED_SSN]')
+                    pan = p.get('ssn', '[REDACTED_PAN]')
                     bank = p.get('bank_account_last4', '****')
 
                     return (
                         f"According to confidential payroll records for **{matched_person_canon}**:\n\n"
-                        f"- **Base Salary:** {base}\n"
-                        f"- **Annual Performance Bonus:** {bonus}\n"
+                        f"- **Base Salary:** {base} (INR)\n"
+                        f"- **Annual Performance Bonus:** {bonus} (INR)\n"
                         f"- **Equity Grant:** {equity}\n"
-                        f"- **Tax ID (SSN):** `{ssn}`\n"
+                        f"- **PAN / Tax Identifier:** `{pan}`\n"
                         f"- **Direct Deposit Account:** Ending in `{bank}`\n\n"
                         "*Note: Compensation data is confidential and restricted to HR and Executive leadership.*"
                     )
@@ -382,17 +460,56 @@ class EnterpriseInferenceEngine:
                 mgr = p.get("manager_name", "None")
                 phone = p.get("phone_number", "")
                 hire = p.get("hire_date", "")
+                age = p.get("age", "")
+                loc = p.get("location", "")
+
+                age_field = f"- **Age:** {age} years\n" if age else ""
+                loc_field = f"- **Location:** {loc}\n" if loc else ""
 
                 return (
                     f"### Employee Profile: **{matched_person_canon}** (`{emp_id}`)\n\n"
                     f"- **Job Title:** {title}\n"
                     f"- **Department:** {dept}\n"
+                    f"{age_field}"
+                    f"{loc_field}"
+                    f"- **Contact Number:** `{phone}`\n"
                     f"- **Reporting Manager:** {mgr}\n"
                     f"- **Corporate Email:** `{email}`\n"
-                    f"- **Phone Number:** `{phone}`\n"
                     f"- **Hire Date:** {hire}\n\n"
                     "*Record retrieved from the Nexus Software Systems directory.*"
                 )
+
+        # ---------------------------------------------------------------------
+        # 7. DevSecOps Incident & Vulnerability Audits
+        # ---------------------------------------------------------------------
+        incident_items = [p for p in parsed_rows if "cve_reference" in p or "mitigation_status" in p]
+        if incident_items:
+            output = ["### [DevSecOps Audits] Security Incidents & Vulnerability Findings\n"]
+            for p in incident_items:
+                output.append(
+                    f"**{p.get('title', 'Security Incident')}** (`{p.get('cve_reference', 'CVE')}`)\n"
+                    f"- **Severity:** `{p.get('severity', 'MEDIUM')}` | **Status:** `{p.get('mitigation_status', 'RESOLVED')}`\n"
+                    f"- **Affected Service:** {p.get('affected_service', 'N/A')}\n"
+                    f"- **Lead Responder:** {p.get('lead_responder', 'N/A')}\n"
+                    f"- **Findings Summary:** *{p.get('findings_summary', '')}*\n"
+                )
+            return "\n".join(output)
+
+        # ---------------------------------------------------------------------
+        # 8. Customer Support Tickets
+        # ---------------------------------------------------------------------
+        ticket_items = [p for p in parsed_rows if "customer_account" in p and "issue_summary" in p]
+        if ticket_items:
+            output = ["### [Customer Support] Active Engineering Support Tickets\n"]
+            for p in ticket_items:
+                output.append(
+                    f"**Ticket `{p.get('ticket_id', 'TKT')}`: {p.get('customer_account', 'Account')}**\n"
+                    f"- **Priority:** `{p.get('priority', 'MEDIUM')}` | **Status:** `{p.get('resolution_status', 'OPEN')}`\n"
+                    f"- **Assigned Engineer:** {p.get('assigned_engineer', 'Unassigned')}\n"
+                    f"- **Issue Summary:** {p.get('issue_summary', '')}\n"
+                    f"- **Logged Date:** {p.get('created_date', '')}\n"
+                )
+            return "\n".join(output)
 
         # ---------------------------------------------------------------------
         # 9. Company Policies & Working Hours
@@ -446,7 +563,10 @@ class EnterpriseInferenceEngine:
                 title = p.get("job_title", "")
                 dept = p.get("department", "")
                 email = p.get("email", "")
-                output.append(f"- **{name}** -- *{title}* ({dept}) | `{email}`")
+                loc = p.get("location", "")
+                age = p.get("age", "")
+                meta_info = f" ({loc}, Age {age})" if loc and age else ""
+                output.append(f"- **{name}** -- *{title}* ({dept}){meta_info} | `{email}`")
             return "\n".join(output)
 
         # ---------------------------------------------------------------------

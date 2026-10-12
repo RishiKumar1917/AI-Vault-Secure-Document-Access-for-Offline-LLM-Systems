@@ -143,11 +143,11 @@ def _rebuild_fts_index(conn: sqlite3.Connection) -> None:
     cur.execute("DELETE FROM company_knowledge_fts")
 
     # 1. Employees Directory
-    cur.execute("SELECT emp_id, full_name, email, department, role_tier, job_title, manager_name, phone_number, hire_date FROM employees")
+    cur.execute("SELECT emp_id, full_name, email, department, role_tier, job_title, manager_name, phone_number, hire_date, age, location FROM employees")
     for r in cur.fetchall():
         cur.execute(
             "INSERT INTO company_knowledge_fts VALUES (?, ?, ?, ?, ?)",
-            ("public_employee_directory", r[0], "INTERNAL", f"Employee: {r[1]}", f"{r[1]} {r[2]} {r[3]} {r[4]} {r[5]} manager {r[6]} phone {r[7]} hire {r[8]}")
+            ("public_employee_directory", r[0], "INTERNAL", f"Employee: {r[1]}", f"{r[1]} {r[2]} {r[3]} {r[4]} {r[5]} manager {r[6]} phone {r[7]} hire {r[8]} age {r[9]} location {r[10]}")
         )
 
     # 2. Payroll & Compensation
@@ -155,7 +155,7 @@ def _rebuild_fts_index(conn: sqlite3.Connection) -> None:
     for r in cur.fetchall():
         cur.execute(
             "INSERT INTO company_knowledge_fts VALUES (?, ?, ?, ?, ?)",
-            ("employee_payroll", r[0], "CONFIDENTIAL", f"Payroll: {r[1]}", f"{r[1]} {r[0]} salary base_salary ${r[2]} bonus ${r[3]} equity {r[4]} units SSN {r[5]} bank {r[6]}")
+            ("employee_payroll", r[0], "CONFIDENTIAL", f"Payroll: {r[1]}", f"{r[1]} {r[0]} salary base_salary INR ₹{r[2]} bonus ₹{r[3]} equity {r[4]} units PAN {r[5]} bank {r[6]}")
         )
 
     # 3. Engineering Projects & Secrets
@@ -203,7 +203,7 @@ def _rebuild_fts_index(conn: sqlite3.Connection) -> None:
     for r in cur.fetchall():
         cur.execute(
             "INSERT INTO company_knowledge_fts VALUES (?, ?, ?, ?, ?)",
-            ("client_contracts_nda", r[0], "CONFIDENTIAL", f"Contract NDA: {r[1]}", f"{r[0]} client {r[1]} industry {r[2]} annual value ${r[3]} renewal {r[5]} contact {r[6]} penalty {r[7]} terms {r[8]}")
+            ("client_contracts_nda", r[0], "CONFIDENTIAL", f"Contract NDA: {r[1]}", f"{r[0]} client {r[1]} industry {r[2]} annual value rupees INR ₹{r[3]} renewal {r[5]} contact {r[6]} penalty {r[7]} terms {r[8]}")
         )
 
     # 9. Production Cloud Infrastructure Master Keys
@@ -220,18 +220,42 @@ def _rebuild_fts_index(conn: sqlite3.Connection) -> None:
 def init_and_seed_database(force_reseed: bool = False) -> None:
     """Initialize database tables and populate with rich enterprise records and FTS5 search."""
     if DB_PATH.exists() and not force_reseed:
-        # Check if new tables exist, if not, upgrade them
+        # Check if new tables and columns exist; if missing, trigger reseed migration
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='client_contracts_nda'")
-        has_new_tables = cur.fetchone() is not None
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='employees'")
+        has_employees = cur.fetchone() is not None
+        if has_employees:
+            cur.execute("PRAGMA table_info(employees)")
+            cols = [row[1] for row in cur.fetchall()]
+            if "age" not in cols or "location" not in cols:
+                force_reseed = True
+        else:
+            force_reseed = True
         conn.close()
-        if has_new_tables:
+        if not force_reseed:
             _ensure_chat_tables_exist()
             return
 
     conn = get_db_connection()
     cur = conn.cursor()
+
+    if force_reseed:
+        tables_to_drop = [
+            "employees",
+            "employee_payroll",
+            "engineering_projects",
+            "performance_reviews",
+            "company_policies",
+            "customer_support_tickets",
+            "security_incident_reports",
+            "client_contracts_nda",
+            "cloud_infrastructure_keys",
+            "company_knowledge_fts",
+        ]
+        for tbl in tables_to_drop:
+            cur.execute(f"DROP TABLE IF EXISTS {tbl}")
+        conn.commit()
 
     # 1. Employees Table
     cur.execute("""
@@ -244,7 +268,9 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             job_title TEXT NOT NULL,
             manager_name TEXT,
             phone_number TEXT,
-            hire_date TEXT NOT NULL
+            hire_date TEXT NOT NULL,
+            age INTEGER NOT NULL,
+            location TEXT NOT NULL
         )
     """)
 
@@ -386,30 +412,30 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
     # --- SEED DATA ---
 
     employees_data = [
-        ("EMP-101", "Eleanor Vance", "eleanor.vance@nexussoftware.internal", "Executive", "executive", "Chief Executive Officer (CEO)", None, "(555) 019-1001", "2020-01-15"),
-        ("EMP-102", "Marcus Chen", "marcus.chen@nexussoftware.internal", "Engineering", "executive", "Chief Technology Officer (CTO)", "Eleanor Vance", "(555) 019-1002", "2020-03-01"),
-        ("EMP-103", "Sarah Jenkins", "sarah.jenkins@nexussoftware.internal", "Human Resources", "hr", "VP of People & Talent", "Eleanor Vance", "(555) 019-1003", "2020-06-10"),
-        ("EMP-104", "Vikram Patel", "vikram.patel@nexussoftware.internal", "Engineering", "engineer", "Principal Cloud Architect", "Marcus Chen", "(555) 019-1004", "2021-02-18"),
-        ("EMP-105", "David Ross", "david.ross@nexussoftware.internal", "Engineering", "engineer", "Senior Backend Engineer (Payments)", "Vikram Patel", "(555) 019-1005", "2021-08-01"),
-        ("EMP-106", "Aisha Al-Mansoor", "aisha.mansoor@nexussoftware.internal", "Engineering", "engineer", "Lead Frontend & React Architect", "Vikram Patel", "(555) 019-1006", "2022-01-10"),
-        ("EMP-107", "Rachel Adams", "rachel.adams@nexussoftware.internal", "Human Resources", "hr", "HR Operations & Payroll Lead", "Sarah Jenkins", "(555) 019-1007", "2022-04-15"),
-        ("EMP-108", "Carlos Mendez", "carlos.mendez@nexussoftware.internal", "IT & Security", "admin", "Senior DevSecOps & SysAdmin", "Marcus Chen", "(555) 019-1008", "2022-09-01"),
-        ("EMP-109", "Priya Sharma", "priya.sharma@nexussoftware.internal", "Engineering", "intern", "Software Engineering Intern (Backend)", "David Ross", "(555) 019-1009", "2026-06-01"),
-        ("EMP-110", "Leo Dupont", "leo.dupont@nexussoftware.internal", "Engineering", "intern", "QA & Security Automation Intern", "Carlos Mendez", "(555) 019-1010", "2026-06-01"),
+        ("EMP-101", "Ananya Deshmukh", "ananya.deshmukh@nexussoftware.internal", "Executive", "executive", "Chief Executive Officer (CEO)", None, "+91 98201 54321", "2020-01-15", 44, "Bengaluru, Karnataka"),
+        ("EMP-102", "Rohan Murthy", "rohan.murthy@nexussoftware.internal", "Engineering", "executive", "Chief Technology Officer (CTO)", "Ananya Deshmukh", "+91 98450 67890", "2020-03-01", 41, "Bengaluru, Karnataka"),
+        ("EMP-103", "Sunita Nair", "sunita.nair@nexussoftware.internal", "Human Resources", "hr", "VP of People & Talent", "Ananya Deshmukh", "+91 98190 23456", "2020-06-10", 39, "Mumbai, Maharashtra"),
+        ("EMP-104", "Vikram Patel", "vikram.patel@nexussoftware.internal", "Engineering", "engineer", "Principal Cloud Architect", "Rohan Murthy", "+91 97034 56789", "2021-02-18", 36, "Hyderabad, Telangana"),
+        ("EMP-105", "Arjun Mehta", "arjun.mehta@nexussoftware.internal", "Engineering", "engineer", "Senior Backend Engineer (Payments)", "Vikram Patel", "+91 98902 34567", "2021-08-01", 31, "Pune, Maharashtra"),
+        ("EMP-106", "Kavita Reddy", "kavita.reddy@nexussoftware.internal", "Engineering", "engineer", "Lead Frontend & React Architect", "Vikram Patel", "+91 96180 45678", "2022-01-10", 29, "Hyderabad, Telangana"),
+        ("EMP-107", "Pooja Iyer", "pooja.iyer@nexussoftware.internal", "Human Resources", "hr", "HR Operations & Payroll Lead", "Sunita Nair", "+91 98401 23456", "2022-04-15", 32, "Bengaluru, Karnataka"),
+        ("EMP-108", "Kabir Sen", "kabir.sen@nexussoftware.internal", "IT & Security", "admin", "Senior DevSecOps & SysAdmin", "Rohan Murthy", "+91 98112 34567", "2022-09-01", 34, "Gurgaon, Haryana"),
+        ("EMP-109", "Priya Sharma", "priya.sharma@nexussoftware.internal", "Engineering", "intern", "Software Engineering Intern (Backend)", "Arjun Mehta", "6204567867", "2026-06-01", 21, "Noida, Uttar Pradesh"),
+        ("EMP-110", "Aman Verma", "aman.verma@nexussoftware.internal", "Engineering", "intern", "QA & Security Automation Intern", "Kabir Sen", "+91 70112 34290", "2026-06-01", 22, "Pune, Maharashtra"),
     ]
-    cur.executemany("INSERT OR REPLACE INTO employees VALUES (?,?,?,?,?,?,?,?,?)", employees_data)
+    cur.executemany("INSERT OR REPLACE INTO employees VALUES (?,?,?,?,?,?,?,?,?,?,?)", employees_data)
 
     payroll_data = [
-        (1, "EMP-101", "Eleanor Vance", 320000, 75000, 150000, "000-11-2233", "7891"),
-        (2, "EMP-102", "Marcus Chen", 265000, 50000, 100000, "111-22-3344", "4521"),
-        (3, "EMP-103", "Sarah Jenkins", 195000, 30000, 45000, "222-33-4455", "9012"),
-        (4, "EMP-104", "Vikram Patel", 215000, 35000, 60000, "333-44-5566", "3341"),
-        (5, "EMP-105", "David Ross", 165000, 20000, 25000, "444-55-6677", "6672"),
-        (6, "EMP-106", "Aisha Al-Mansoor", 170000, 22000, 30000, "555-66-7788", "1284"),
-        (7, "EMP-107", "Rachel Adams", 120000, 15000, 12000, "666-77-8899", "8933"),
-        (8, "EMP-108", "Carlos Mendez", 155000, 18000, 20000, "777-88-9900", "5512"),
-        (9, "EMP-109", "Priya Sharma", 45000, 2000, 0, "888-99-0011", "9041"),
-        (10, "EMP-110", "Leo Dupont", 45000, 2000, 0, "999-00-1122", "3429"),
+        (1, "EMP-101", "Ananya Deshmukh", 5500000, 1500000, 250000, "ABCPD1234F", "7891"),
+        (2, "EMP-102", "Rohan Murthy", 4800000, 1200000, 180000, "BMRPM5678G", "4521"),
+        (3, "EMP-103", "Sunita Nair", 3600000, 750000, 75000, "CSNPN9012H", "9012"),
+        (4, "EMP-104", "Vikram Patel", 3800000, 800000, 100000, "DVPVP3456J", "3341"),
+        (5, "EMP-105", "Arjun Mehta", 2850000, 450000, 40000, "EAMPM7890K", "6672"),
+        (6, "EMP-106", "Kavita Reddy", 2600000, 400000, 50000, "FKRKR1234L", "1284"),
+        (7, "EMP-107", "Pooja Iyer", 1950000, 250000, 20000, "GPIPI5678M", "8933"),
+        (8, "EMP-108", "Kabir Sen", 2700000, 350000, 35000, "HKSKS9012N", "5512"),
+        (9, "EMP-109", "Priya Sharma", 480000, 35000, 0, "IPSPS3456P", "9041"),
+        (10, "EMP-110", "Aman Verma", 480000, 35000, 0, "JAVAV7890Q", "3429"),
     ]
     cur.executemany("INSERT OR REPLACE INTO employee_payroll VALUES (?,?,?,?,?,?,?,?)", payroll_data)
 
@@ -417,8 +443,8 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
         (
             "PRJ-CORE-PAY",
             "Core Payments & Billing Engine",
-            "David Ross",
-            "Python, FastAPI, PostgreSQL, Redis, Stripe SDK",
+            "Arjun Mehta",
+            "Python, FastAPI, PostgreSQL, Redis, Stripe SDK, UPI Gateway",
             "git@github.internal:nexus/payments-engine.git",
             "https://staging-billing.nexussoftware.internal/v1",
             "AKIA2J4X9EXAMPLEKEY01",
@@ -428,7 +454,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
         (
             "PRJ-AUTH-GATE",
             "AI-Vault Security Gateway Service",
-            "Vikram Patel & Carlos Mendez",
+            "Vikram Patel & Kabir Sen",
             "Python, FastAPI, Ollama, SQLite, Streamlit",
             "git@github.internal:nexus/ai-vault-gateway.git",
             "https://gateway-dev.nexussoftware.internal",
@@ -439,7 +465,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
         (
             "PRJ-WEB-PORTAL",
             "NextGen Enterprise Customer Portal",
-            "Aisha Al-Mansoor",
+            "Kavita Reddy",
             "TypeScript, React 19, TailwindCSS, Vite",
             "git@github.internal:nexus/customer-portal.git",
             "https://portal-preview.nexussoftware.internal",
@@ -452,9 +478,9 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
 
     reviews_data = [
         (1, "EMP-104", "Vikram Patel", "2026-Q2", 4.9, "Outstanding architectural leadership. Migrated microservices to zero-trust architecture. Eligible for Fellow promotion.", "LOW", "PROMOTION_READY"),
-        (2, "EMP-105", "David Ross", "2026-Q2", 4.4, "Solid delivery on billing resiliency. Received a competitive external offer from Fintech rival, retention bonus suggested.", "MEDIUM", "MAINTAIN_ROLE"),
-        (3, "EMP-109", "Priya Sharma", "2026-Midterm", 4.8, "Exceptional intern performance. Quickly solved asynchronous queue bottlenecks. Strong candidate for full-time offer.", "LOW", "CONVERT_FULLTIME"),
-        (4, "EMP-110", "Leo Dupont", "2026-Midterm", 3.2, "Requires closer mentorship on security boundaries and CI/CD pipelines. Missed two test milestones.", "HIGH", "NEEDS_IMPROVEMENT"),
+        (2, "EMP-105", "Arjun Mehta", "2026-Q2", 4.4, "Solid delivery on billing resiliency and NPCI/UPI integrations. Received a competitive external offer from Fintech rival, retention bonus suggested.", "MEDIUM", "MAINTAIN_ROLE"),
+        (3, "EMP-109", "Priya Sharma", "2026-Midterm", 4.8, "Exceptional intern performance in Noida team. Quickly solved asynchronous queue bottlenecks. Strong candidate for full-time offer.", "LOW", "CONVERT_FULLTIME"),
+        (4, "EMP-110", "Aman Verma", "2026-Midterm", 3.2, "Requires closer mentorship on security boundaries and CI/CD pipelines. Missed two test milestones.", "HIGH", "NEEDS_IMPROVEMENT"),
     ]
     cur.executemany("INSERT OR REPLACE INTO performance_reviews VALUES (?,?,?,?,?,?,?,?)", reviews_data)
 
@@ -463,7 +489,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "POL-001",
             "Workplace & Flexibility",
             "Core Working Hours & Hybrid Policy",
-            "Nexus Software operates on a flexible 40-hour work week. Core collaboration hours are 10:00 AM to 4:00 PM local time. Engineers and interns may work remotely up to 3 days per week with manager coordination.",
+            "Nexus Software operates on a flexible 40-hour work week. Core collaboration hours are 10:00 AM to 4:00 PM IST. Engineers and interns may work remotely up to 3 days per week with manager coordination.",
             "2026-01-01"
         ),
         (
@@ -484,7 +510,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "POL-004",
             "Expenses & Equipment",
             "Home Office & Travel Reimbursement",
-            "Employees are eligible for a $1,000 one-time home office equipment stipend upon onboarding. Approved business travel expenses are reimbursed through the Expensify portal with receipts.",
+            "Employees are eligible for a ₹75,000 one-time home office equipment stipend upon onboarding. Approved business travel expenses are reimbursed through the corporate portal with GST invoices.",
             "2026-01-01"
         ),
     ]
@@ -492,11 +518,11 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
 
     # 6. Customer Support Tickets
     tickets_data = [
-        ("TKT-1081", "Acquirer Bank Corp", "HIGH", "Webhook delivery timeout during payment reconciliation batch", "David Ross", "RESOLVED", "2026-08-10"),
-        ("TKT-1082", "HealthCare Direct Systems", "CRITICAL", "OAuth2 token expiry issue causing intermittent customer portal disconnects", "Aisha Al-Mansoor", "IN_PROGRESS", "2026-09-02"),
-        ("TKT-1083", "Logistics Prime Alliance", "MEDIUM", "CSV export format compatibility with SAP accounting system", "Priya Sharma", "RESOLVED", "2026-09-15"),
-        ("TKT-1084", "FinTech Global Corp", "LOW", "Request for custom dark mode branding in customer billing interface", "Aisha Al-Mansoor", "QUEUED", "2026-10-01"),
-        ("TKT-1085", "OmniRetail eCommerce", "HIGH", "Rate limit 429 response on staging checkout API during stress testing", "Vikram Patel", "INVESTIGATING", "2026-10-08"),
+        ("TKT-1081", "HDFC Banking Partner", "HIGH", "Webhook delivery timeout during payment reconciliation batch", "Arjun Mehta", "RESOLVED", "2026-08-10"),
+        ("TKT-1082", "Apollo Health Systems", "CRITICAL", "OAuth2 token expiry issue causing intermittent customer portal disconnects", "Kavita Reddy", "IN_PROGRESS", "2026-09-02"),
+        ("TKT-1083", "Tata Logistics Alliance", "MEDIUM", "CSV export format compatibility with SAP accounting system", "Priya Sharma", "RESOLVED", "2026-09-15"),
+        ("TKT-1084", "FinTech Global Corp", "LOW", "Request for custom dark mode branding in customer billing interface", "Kavita Reddy", "QUEUED", "2026-10-01"),
+        ("TKT-1085", "Reliance Retail eCommerce", "HIGH", "Rate limit 429 response on staging checkout API during stress testing", "Vikram Patel", "INVESTIGATING", "2026-10-08"),
     ]
     cur.executemany("INSERT OR REPLACE INTO customer_support_tickets VALUES (?,?,?,?,?,?,?)", tickets_data)
 
@@ -509,7 +535,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "Staging Redis Cluster Authentication Bypass Remediated",
             "Payments Core Microservice",
             "RESOLVED_PATCHED",
-            "Carlos Mendez",
+            "Kabir Sen",
             "Zero-day authentication bypass in staging Redis cluster addressed with TLS mutual authentication and network security groups."
         ),
         (
@@ -519,7 +545,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "Indirect Prompt Injection in Webhook Feedback Parser",
             "AI-Vault Gateway Sandbox",
             "MITIGATED",
-            "Carlos Mendez & Vikram Patel",
+            "Kabir Sen & Vikram Patel",
             "Adversary attempted prompt injection payload via customer support feedback form; blocked by input sanitizer and Canary token tripwire."
         ),
         (
@@ -529,7 +555,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "Dependency Vulnerability in Open-Source JWT Parsing Library",
             "Identity & Auth Service",
             "PATCHED",
-            "David Ross",
+            "Arjun Mehta",
             "Upgraded cryptographic library to version 3.4.1 to remediate timing attack vector."
         ),
         (
@@ -539,7 +565,7 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "Annual Phishing Simulation & Least-Privilege IAM Review",
             "All Departments",
             "COMPLETED",
-            "Sarah Jenkins & Carlos Mendez",
+            "Sunita Nair & Kabir Sen",
             "98.4% passing rate across staff. Intern and contractor repository permissions trimmed to minimum necessary scope."
         ),
     ]
@@ -551,44 +577,44 @@ def init_and_seed_database(force_reseed: bool = False) -> None:
             "CON-501",
             "FinTech Global Corp",
             "Financial Services & Banking",
-            3400000,
+            34000000,
             "2024-03-01",
             "2027-03-01",
             "procurement@fintechglobal.corp",
-            "$10,000,000 Liquidated Damages for Proprietary Source Code Leaks",
+            "₹10,00,00,000 Liquidated Damages for Proprietary Source Code Leaks",
             "Strict zero external public cloud AI clause. Air-gapped on-premise AI-Vault gateway mandated."
         ),
         (
             "CON-502",
-            "HealthCare Direct Systems",
+            "Apollo Health Systems",
             "Healthcare & Telemedicine",
-            2800000,
+            28000000,
             "2024-08-15",
             "2026-08-15",
-            "legal@healthcaredirect.internal",
-            "$7,500,000 HIPAA Non-Disclosure Liability Clause",
+            "legal@apollohealth.internal",
+            "₹7,50,00,000 Data Privacy & Non-Disclosure Liability Clause",
             "All employee, patient, and billing records must remain encrypted under AES-256 with zero third-party egress."
         ),
         (
             "CON-503",
-            "Global Logistics Alliance",
+            "Tata Logistics Alliance",
             "Supply Chain & Freight",
-            1650000,
+            16500000,
             "2025-01-10",
             "2027-01-10",
-            "contracts@globallogistics.org",
-            "$3,000,000 SLA Breach Penalty",
+            "contracts@tataglobal.org",
+            "₹3,00,00,000 SLA Breach Penalty",
             "Requires 99.99% gateway uptime SLA with dedicated failover cluster."
         ),
         (
             "CON-504",
-            "OmniRetail eCommerce Group",
+            "Reliance Retail eCommerce Group",
             "Retail & Payments",
-            2100000,
+            21000000,
             "2025-06-01",
             "2026-06-01",
-            "finance@omniretail.com",
-            "$5,000,000 Intellectual Property Protection Guarantee",
+            "finance@relianceretail.internal",
+            "₹5,00,00,000 Intellectual Property Protection Guarantee",
             "Payment engine staging credentials and schemas must never be disclosed to third-party consultants."
         ),
     ]
@@ -776,7 +802,7 @@ def get_table_records(table_name: str) -> List[Dict[str, Any]]:
     cur = conn.cursor()
 
     if table_name == "public_employee_directory":
-        cur.execute("SELECT emp_id, full_name, email, department, role_tier, job_title, manager_name, phone_number, hire_date FROM employees")
+        cur.execute("SELECT emp_id, full_name, email, department, role_tier, job_title, manager_name, phone_number, hire_date, age, location FROM employees")
     else:
         valid_tables = {
             "employees",
@@ -856,7 +882,7 @@ def auto_search_database(
 
     # 2. Targeted Semantic Heuristics to guarantee recall on critical domains
     # Payroll & Compensation
-    if any(k in query_lower for k in ["salary", "salaries", "compensation", "payroll", "bonus", "equity", "stock", "earn", "ssn", "bank", "pay"]):
+    if any(k in query_lower for k in ["salary", "salaries", "compensation", "payroll", "bonus", "equity", "stock", "earn", "ssn", "pan", "bank", "pay", "rupee", "rupees", "inr", "stipend"]):
         if "employee_payroll" not in target_tables:
             target_tables.append("employee_payroll")
 
@@ -866,7 +892,7 @@ def auto_search_database(
             target_tables.append("cloud_infrastructure_keys")
 
     # Enterprise Client Contracts & NDAs
-    if any(k in query_lower for k in ["contract", "nda", "client", "breach penalty", "liquidated damages", "sla", "deal", "million", "hipaa", "procurement"]):
+    if any(k in query_lower for k in ["contract", "nda", "client", "breach penalty", "liquidated damages", "sla", "deal", "million", "crore", "hipaa", "procurement"]):
         if "client_contracts_nda" not in target_tables:
             target_tables.append("client_contracts_nda")
 
@@ -895,10 +921,16 @@ def auto_search_database(
         if "company_policies" not in target_tables:
             target_tables.append("company_policies")
 
-    # Directory Keywords or Names
-    names = ["eleanor vance", "marcus chen", "sarah jenkins", "vikram patel", "david ross", "aisha", "rachel adams", "carlos mendez", "priya sharma", "leo dupont"]
+    # Directory Keywords or Names (Both Indian identities and backwards compatibility aliases)
+    names = [
+        "ananya deshmukh", "rohan murthy", "sunita nair", "vikram patel",
+        "arjun mehta", "kavita reddy", "pooja iyer", "kabir sen",
+        "priya sharma", "aman verma",
+        "eleanor vance", "marcus chen", "sarah jenkins", "david ross",
+        "aisha", "rachel adams", "carlos mendez", "leo dupont"
+    ]
     has_name = any(n in query_lower for n in names)
-    if has_name or any(k in query_lower for k in ["employee", "who is", "email", "manager", "team", "title", "directory", "contact", "phone", "hire", "department", "ceo", "cto"]):
+    if has_name or any(k in query_lower for k in ["employee", "who is", "email", "manager", "team", "title", "directory", "contact", "phone", "number", "age", "location", "city", "hire", "department", "ceo", "cto"]):
         if "public_employee_directory" not in target_tables:
             target_tables.append("public_employee_directory")
 
