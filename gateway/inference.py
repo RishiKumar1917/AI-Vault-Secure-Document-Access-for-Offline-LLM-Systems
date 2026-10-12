@@ -7,6 +7,7 @@ eliminating raw database dumps or static canned strings.
 
 import json
 import re
+import time
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -158,23 +159,52 @@ class EnterpriseInferenceEngine:
     def __init__(
         self,
         ollama_url: str = "http://127.0.0.1:11434/api/generate",
-        tags_url: str = "http://127.0.0.1:11434/api/tags",
+        tags_url: Optional[str] = None,
         preferred_model: str = "dolphin-uncensored",
     ) -> None:
         self.ollama_url = ollama_url
-        self.tags_url = tags_url
+        if tags_url:
+            self.tags_url = tags_url
+        else:
+            base = ollama_url.rsplit("/api/", 1)[0] if "/api/" in ollama_url else ollama_url.rstrip("/")
+            self.tags_url = f"{base}/api/tags"
         self.preferred_model = preferred_model
+
+    def check_health(self) -> Dict[str, Any]:
+        """Test live connection to Ollama daemon, measure ping latency, and list models."""
+        t0 = time.time()
+        try:
+            req = Request(self.tags_url, headers={"User-Agent": "AI-Vault-Gateway"})
+            with urlopen(req, timeout=2.5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                models = [m.get("name", "") for m in data.get("models", []) if m.get("name")]
+                latency_ms = round((time.time() - t0) * 1000, 1)
+                best_model = self.get_best_model(models) if models else None
+                return {
+                    "connected": True,
+                    "endpoint": self.ollama_url,
+                    "tags_endpoint": self.tags_url,
+                    "latency_ms": latency_ms,
+                    "models": models,
+                    "active_model": best_model,
+                    "status_text": f"Connected ({best_model} • {latency_ms}ms)"
+                }
+        except Exception as e:
+            return {
+                "connected": False,
+                "endpoint": self.ollama_url,
+                "tags_endpoint": self.tags_url,
+                "latency_ms": None,
+                "models": [],
+                "active_model": None,
+                "error": str(e),
+                "status_text": "Disconnected / Offline"
+            }
 
     def get_available_ollama_models(self) -> List[str]:
         """Check if local Ollama daemon is reachable and has downloaded models."""
-        try:
-            req = Request(self.tags_url, headers={"User-Agent": "AI-Vault-Gateway"})
-            with urlopen(req, timeout=1.5) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                models = [m.get("name", "") for m in data.get("models", []) if m.get("name")]
-                return models
-        except Exception:
-            return []
+        health = self.check_health()
+        return health.get("models", []) if health.get("connected") else []
 
     def get_best_model(self, available_models: List[str]) -> str:
         """Pick highest-priority model available in local Ollama (Dolphin uncensored preferred)."""

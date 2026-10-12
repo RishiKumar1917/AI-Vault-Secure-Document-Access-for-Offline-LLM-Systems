@@ -6,6 +6,7 @@ and real-time cryptographic audit telemetry.
 """
 
 import json
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -138,6 +139,7 @@ gateway = SecurityGateway(
     documents={},
     role_permissions=ROLE_TABLE_PERMISSIONS,
     audit_log_path=AUDIT_LOG_FILE,
+    allow_remote=True,
 )
 
 # Known Indian Corporate Personas
@@ -282,6 +284,19 @@ active_persona = PERSONAS[current_persona_key]
 current_username = active_persona["username"]
 current_role = active_persona["role"]
 
+# Reconfigure Ollama endpoint if custom URL set in session
+if "ollama_url" in st.session_state and st.session_state["ollama_url"] != gateway.ollama_url:
+    gateway.set_ollama_endpoint(st.session_state["ollama_url"], allow_remote=True)
+
+# Cache LLM health check
+if "llm_health" not in st.session_state:
+    st.session_state["llm_health"] = gateway.check_llm_health()
+
+llm_health = st.session_state.get("llm_health", {})
+is_llm_online = llm_health.get("connected", False)
+active_llm_model = llm_health.get("active_model") or "dolphin-uncensored:latest"
+llm_latency_ms = llm_health.get("latency_ms")
+
 # --- SIDEBAR (CONVERSATIONS & SETTINGS) ---
 with st.sidebar:
     st.markdown(f"### {active_persona['avatar']} {active_persona['full_name']}")
@@ -309,6 +324,58 @@ with st.sidebar:
         st.success("🟢 Protected Mode Active\n(Zero-Trust RBAC + DLP Masking)")
     else:
         st.warning("🔴 Vulnerable Mode Active\n(Simulates copilot with no authorization gates)")
+
+    st.divider()
+
+    # Live Local LLM Connection & Diagnostic Card
+    st.subheader("🤖 Local LLM (Ollama)")
+    if is_llm_online:
+        st.markdown(
+            f"<div style='background:rgba(35,134,54,0.15); border:1px solid #238636; border-radius:8px; padding:10px 12px; margin-bottom:10px;'>"
+            f"<div style='color:#3fb950; font-weight:700; font-size:0.88rem;'>🟢 LIVE & CONNECTED</div>"
+            f"<div style='color:#c9d1d9; font-size:0.8rem; margin-top:3px;'><b>Model:</b> <code>{active_llm_model}</code></div>"
+            f"<div style='color:#8b949e; font-size:0.75rem; margin-top:2px;'>Latency: {llm_latency_ms}ms • 100% Offline</div>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            "<div style='background:rgba(218,54,51,0.15); border:1px solid #da3633; border-radius:8px; padding:10px 12px; margin-bottom:10px;'>"
+            "<div style='color:#f85149; font-weight:700; font-size:0.88rem;'>🔴 OFFLINE / UNREACHABLE</div>"
+            "<div style='color:#8b949e; font-size:0.75rem; margin-top:3px;'>Rule-based fallback engine active.</div>"
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+    # Ping / Diagnostic Button
+    col_p1, col_p2 = st.columns([1, 1])
+    with col_p1:
+        if st.button("🔄 Ping LLM", use_container_width=True, help="Test live connection to Ollama daemon"):
+            st.session_state["llm_health"] = gateway.check_llm_health()
+            st.rerun()
+
+    # Cloud Guidance for Render users
+    if not is_llm_online:
+        with st.expander("ℹ️ Why is LLM Offline?", expanded=False):
+            st.markdown(
+                "**Viewing on Render Cloud (`onrender.com`)?**\n\n"
+                "Render's cloud VM cannot access `127.0.0.1` on your laptop where Ollama is running.\n\n"
+                "**Two Solutions:**\n"
+                "1. **Local App (Recommended):** Open **`http://localhost:8501`** on your laptop where both Ollama and Streamlit run together.\n"
+                "2. **Tunnel (Cloud Demo):** Run `ngrok http 11434` on your PC and enter the URL below."
+            )
+
+    # Endpoint Config
+    with st.expander("⚙️ LLM Endpoint Settings", expanded=False):
+        current_endpoint = st.session_state.get("ollama_url", gateway.ollama_url)
+        new_endpoint = st.text_input("Ollama API URL:", value=current_endpoint)
+        if st.button("Save Endpoint", use_container_width=True):
+            if new_endpoint.strip():
+                st.session_state["ollama_url"] = new_endpoint.strip()
+                gateway.set_ollama_endpoint(new_endpoint.strip(), allow_remote=True)
+                st.session_state["llm_health"] = gateway.check_llm_health()
+                st.success(f"Endpoint saved: `{new_endpoint.strip()}`")
+                st.rerun()
 
     st.divider()
 
@@ -343,26 +410,24 @@ with st.sidebar:
                 st.session_state["active_session_id"] = s["session_id"]
                 st.rerun()
 
-    st.divider()
-    st.caption("🧠 Model: `dolphin-uncensored:latest` (Ollama)")
-
 
 # --- TOP APP HEADER ---
-head_col1, head_col2 = st.columns([3.5, 1.5])
+head_col1, head_col2 = st.columns([3.2, 1.8])
 with head_col1:
     st.title("🛡️ Nexus AI Assistant")
     st.caption("Ask questions about company policies, projects, customer tickets, contacts, or compensation.")
 
 with head_col2:
     st.write("")
-    h_c1, h_c2 = st.columns([2.2, 1])
+    h_c1, h_c2 = st.columns([2.4, 1])
     with h_c1:
         posture_badge = "<span class='badge-allowed'>🛡️ PROTECTED</span>" if is_hardened else "<span class='badge-vulnerable'>🔴 VULNERABLE</span>"
+        llm_pill = f"<span class='badge-allowed' style='font-size:0.72rem;'>🟢 LLM LIVE</span>" if is_llm_online else f"<span class='badge-blocked' style='font-size:0.72rem;'>🔴 LLM OFFLINE</span>"
         st.markdown(
             f"<div style='text-align: right;'>"
             f"<span style='font-size: 0.95rem; font-weight:600;'>{active_persona['avatar']} {active_persona['full_name']}</span> "
             f"<span class='role-pill' style='background:{active_persona['role_badge_color']}20; color:{active_persona['role_badge_color']}; border: 1px solid {active_persona['role_badge_color']}; font-size: 0.72rem;'>{current_role.upper()}</span><br>"
-            f"<span style='font-size: 0.8rem; color:#8b949e;'>Mode: {posture_badge}</span>"
+            f"<span style='font-size: 0.8rem; color:#8b949e;'>Mode: {posture_badge} | {llm_pill}</span>"
             f"</div>",
             unsafe_allow_html=True
         )
@@ -385,6 +450,24 @@ tab_chat, tab_explorer, tab_audit = st.tabs([
 # TAB 1: CONVERSATIONAL ASSISTANT (SIMPLE, INTUITIVE CHAT)
 # =============================================================================
 with tab_chat:
+    # Top Live LLM status banner
+    if is_llm_online:
+        st.markdown(
+            f"<div style='display:inline-flex; align-items:center; gap:8px; background:rgba(35,134,54,0.12); border:1px solid #238636; border-radius:6px; padding:6px 14px; margin-bottom:12px; font-size:0.84rem; color:#3fb950;'>"
+            f"<span>🟢 <b>Local LLM Live:</b> <code>{active_llm_model}</code> (Latency: {llm_latency_ms}ms)</span>"
+            f"<span style='color:#8b949e;'>• 100% Offline Local Inference</span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            "<div style='display:inline-flex; align-items:center; gap:8px; background:rgba(218,54,51,0.12); border:1px solid #da3633; border-radius:6px; padding:6px 14px; margin-bottom:12px; font-size:0.84rem; color:#f85149;'>"
+            "<span>🔴 <b>Local LLM Offline:</b> Ollama daemon unreachable at <code>127.0.0.1:11434</code></span>"
+            "<span style='color:#8b949e;'>• Running in Rule-Based Fallback Mode</span>"
+            "</div>",
+            unsafe_allow_html=True
+        )
+
     # 4 Quick, Friendly Starter Prompts
     st.markdown("**💡 Quick Examples to Try:**")
     preset_clicked_prompt = None

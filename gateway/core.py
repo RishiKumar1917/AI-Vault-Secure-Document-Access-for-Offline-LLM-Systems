@@ -1,6 +1,7 @@
 """Core Security Gateway Orchestrator for AI-Vault."""
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 from urllib.parse import urlparse
@@ -29,8 +30,9 @@ class SecurityGateway:
         audit_log_path: str = "logs/audit.log",
         *,
         model: str = "dolphin-uncensored",
-        ollama_url: str = "http://127.0.0.1:11434/api/generate",
+        ollama_url: Optional[str] = None,
         llm_caller: Optional[Callable[[str, str], str]] = None,
+        allow_remote: bool = False,
     ) -> None:
         """
         Initialize the Security Gateway with all security subsystems.
@@ -39,9 +41,10 @@ class SecurityGateway:
             documents: Dict mapping document_id -> content string.
             role_permissions: Dict mapping role -> list of permitted document_ids.
             audit_log_path: Destination for cryptographic JSONL audit logs.
-            model: Ollama model tag to invoke (e.g. 'llama3', 'mistral').
+            model: Ollama model tag to invoke (e.g. 'dolphin-uncensored', 'mistral').
             ollama_url: Local Ollama generation API endpoint.
             llm_caller: Optional callable override for testing or custom inference pipelines.
+            allow_remote: Allow remote tunnel URL (e.g. ngrok/remote host) for cloud demo environments.
         """
         self.documents = {k.lower(): v for k, v in documents.items()}
         self.rbac = RBACManager(role_permissions)
@@ -50,28 +53,45 @@ class SecurityGateway:
         self.canary_manager = CanaryTokenManager()
         self.sanitizer = OutputSanitizer()
         self.audit_logger = AuditLogger(audit_log_path)
+        
+        resolved_url = ollama_url or os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
+        self.model = model
+        self.ollama_url = resolved_url
+        self.llm_caller = llm_caller
+        self.allow_remote = allow_remote or (os.environ.get("ALLOW_REMOTE_OLLAMA", "").lower() in {"true", "1", "yes"})
+
         self.inference_engine = EnterpriseInferenceEngine(
-            ollama_url=ollama_url,
+            ollama_url=resolved_url,
             preferred_model=model
         )
-
-        self.model = model
-        self.ollama_url = ollama_url
-        self.llm_caller = llm_caller
 
         self._validate_offline_endpoint()
 
     def _validate_offline_endpoint(self) -> None:
-        """Verify that the configured LLM endpoint is strictly bound to local loopback."""
+        """Verify that the configured LLM endpoint is strictly bound to local loopback unless explicitly allowed."""
         parsed = urlparse(self.ollama_url)
         host = parsed.hostname
         if parsed.scheme not in {"http", "https"}:
             raise ValueError("ollama_url must use http or https scheme.")
-        if host not in {"127.0.0.1", "localhost", "::1"}:
+        if not self.allow_remote and host not in {"127.0.0.1", "localhost", "::1"}:
             raise ValueError(
                 f"Security Violation: Target LLM endpoint '{self.ollama_url}' is not a local loopback address. "
                 "AI-Vault strictly enforces 100% offline air-gapped operation."
             )
+
+    def check_llm_health(self) -> Dict[str, Any]:
+        """Test live connection to the configured LLM daemon."""
+        return self.inference_engine.check_health()
+
+    def set_ollama_endpoint(self, new_url: str, allow_remote: bool = True) -> None:
+        """Update active Ollama generation endpoint dynamically."""
+        self.ollama_url = new_url
+        self.allow_remote = allow_remote
+        self._validate_offline_endpoint()
+        self.inference_engine = EnterpriseInferenceEngine(
+            ollama_url=new_url,
+            preferred_model=self.model,
+        )
 
     def _resolve_context(self, document_id: str, role: str, unprotected: bool = False) -> str:
         """Resolve content from registered documents or the software company database."""
