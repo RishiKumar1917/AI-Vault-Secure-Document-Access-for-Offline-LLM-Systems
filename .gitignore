@@ -19,7 +19,13 @@ ENV/
 logs/
 *.log
 
+# Databases (auto-seeded on launch)
+data/*.db
+*.db
+*.sqlite3
+
 # Temp / Local documents
 *.pdf
 .DS_Store
 Thumbs.db
+

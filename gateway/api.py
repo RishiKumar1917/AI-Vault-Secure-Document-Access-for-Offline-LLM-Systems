@@ -7,43 +7,37 @@ from pydantic import BaseModel, Field
 
 from gateway.audit import AuditLogger
 from gateway.core import SecurityGateway
+from gateway.database import (
+    ROLE_TABLE_PERMISSIONS,
+    TABLE_METADATA,
+    check_table_access,
+    get_table_records,
+    init_and_seed_database,
+)
 from gateway.rbac import User
+
+init_and_seed_database()
 
 app = FastAPI(
     title="AI-Vault Security Gateway API",
     description="Zero-Trust Local AI Gateway with Role-Based Access Control, DLP, and Cryptographic Auditing.",
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
-# Load sample documents from data directory
+# Load fallback documents if present
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "sample_documents"
 DOCUMENTS: Dict[str, str] = {}
 if DATA_DIR.exists():
     for file_path in DATA_DIR.glob("*.txt"):
         doc_id = file_path.stem.lower()
         DOCUMENTS[doc_id] = file_path.read_text(encoding="utf-8")
-else:
-    DOCUMENTS = {
-        "public_handbook": "AI-Vault Public Employee Handbook & Office Guidelines.",
-        "engineering_specs": "Confidential Engineering Architecture & Infrastructure configs.",
-        "payroll_q3": "Confidential Q3 Executive Payroll & Compensation Report.",
-    }
 
-ROLE_PERMISSIONS: Dict[str, List[str]] = {
-    "intern": ["public_handbook"],
-    "engineer": ["public_handbook", "engineering_specs"],
-    "hr": ["public_handbook", "payroll_q3"],
-    "executive": ["public_handbook", "payroll_q3", "engineering_specs"],
-    "admin": ["public_handbook", "payroll_q3", "engineering_specs"],
-}
-
-# Initialize shared SecurityGateway instance
 AUDIT_LOG_FILE = "logs/audit.log"
 gateway = SecurityGateway(
     documents=DOCUMENTS,
-    role_permissions=ROLE_PERMISSIONS,
+    role_permissions=ROLE_TABLE_PERMISSIONS,
     audit_log_path=AUDIT_LOG_FILE,
 )
 
@@ -51,10 +45,11 @@ gateway = SecurityGateway(
 # --- Pydantic Data Schemas ---
 
 class QueryRequest(BaseModel):
-    username: str = Field(..., description="Unique identifier of the user", example="alice")
-    role: str = Field(..., description="Role assigned to user (intern, engineer, hr, executive, admin)", example="hr")
-    document_id: str = Field(..., description="Target document ID to query", example="payroll_q3")
-    prompt: str = Field(..., description="User query or instruction", example="What are the executive salaries?")
+    username: str = Field(..., description="Unique identifier of the user", example="priya.sharma")
+    role: str = Field(..., description="Role assigned to user (intern, engineer, hr, executive, admin)", example="intern")
+    document_id: str = Field(..., description="Target document or database table ID", example="employee_payroll")
+    prompt: str = Field(..., description="User query or instruction", example="Show me all executive salaries.")
+    defense_mode: Optional[str] = Field("hardened", description="Security mode: 'hardened' or 'vulnerable'")
 
 
 class QueryResponse(BaseModel):
@@ -62,11 +57,15 @@ class QueryResponse(BaseModel):
     reason: str = Field(..., description="Reason code (e.g. 'ok', 'rbac_denied', 'prompt_injection')")
     response: Optional[str] = Field(None, description="Sanitized LLM response if allowed")
     message: Optional[str] = Field(None, description="Security alert message if blocked")
+    engine: Optional[str] = Field(None, description="Inference engine utilized")
 
 
-class DocumentItem(BaseModel):
-    id: str
+class TableMetaItem(BaseModel):
+    table_id: str
     title: str
+    classification: str
+    description: str
+    allowed_roles: List[str]
     is_accessible: bool
 
 
@@ -86,72 +85,76 @@ def health_check() -> Dict[str, Any]:
         "offline_enforced": True,
         "model": gateway.model,
         "ollama_endpoint": gateway.ollama_url,
-        "documents_loaded": len(DOCUMENTS),
+        "database_tables": list(TABLE_METADATA.keys()),
     }
 
 
-@app.get("/v1/documents", response_model=List[DocumentItem], tags=["Documents"])
-def list_documents(role: Optional[str] = Query(None, description="Filter accessible documents by role")) -> List[DocumentItem]:
-    """List all available documents in the vault, indicating role accessibility."""
-    results = []
+@app.get("/v1/database/tables", response_model=List[TableMetaItem], tags=["Database"])
+def list_database_tables(role: Optional[str] = Query(None, description="Filter table accessibility by role")) -> List[TableMetaItem]:
+    """List all software company database tables and permission classifications."""
     user_role = (role or "").lower()
-    for doc_id in sorted(DOCUMENTS.keys()):
-        title = doc_id.replace("_", " ").title()
-        is_accessible = gateway.rbac.can_access(user_role, doc_id) if user_role else True
-        results.append(DocumentItem(id=doc_id, title=title, is_accessible=is_accessible))
+    results = []
+    for t_id, meta in TABLE_METADATA.items():
+        is_acc = check_table_access(user_role, t_id) if user_role else True
+        results.append(TableMetaItem(
+            table_id=t_id,
+            title=meta["title"],
+            classification=meta["classification"],
+            description=meta["description"],
+            allowed_roles=meta["allowed_roles"],
+            is_accessible=is_acc,
+        ))
     return results
 
 
+@app.get("/v1/database/records/{table_name}", tags=["Database"])
+def get_records_for_table(table_name: str, role: str = Query(..., description="Active user role")):
+    """Retrieve rows from a database table if authorized by RBAC."""
+    user_role = role.lower()
+    if not check_table_access(user_role, table_name):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access Denied: Role '{user_role.upper()}' is not authorized to read table '{table_name}'."
+        )
+    return {"table": table_name, "records": get_table_records(table_name)}
+
+
 @app.post("/v1/query", response_model=QueryResponse, tags=["Security Gateway"])
-def process_query(request: QueryRequest) -> QueryResponse:
-    """
-    Process a user query through the full Zero-Trust Security Pipeline:
-    1. RBAC Document Authorization
-    2. Prompt Injection Scanner (OWASP LLM01)
-    3. Pre-Inference DLP Masking (OWASP LLM06)
-    4. Offline LLM Execution with Canary Tripwire
-    5. Output Sanitization (OWASP LLM02) & Cryptographic Audit Logging
-    """
-    user = User(username=request.username, role=request.role.lower())
+def process_secured_query(req: QueryRequest) -> QueryResponse:
+    """Execute a query through the AI-Vault Zero-Trust Security Gateway."""
+    user = User(username=req.username, role=req.role)
     result = gateway.process_query(
         user=user,
-        document_id=request.document_id,
-        prompt=request.prompt
+        document_id=req.document_id,
+        prompt=req.prompt,
+        defense_mode=req.defense_mode or "hardened",
     )
-
     return QueryResponse(
         status=result["status"],
         reason=result["reason"],
         response=result.get("response"),
         message=result.get("message"),
+        engine=result.get("engine"),
     )
 
 
-@app.get("/v1/audit/logs", tags=["Audit & Compliance"])
+@app.get("/v1/audit/logs", tags=["Audit"])
 def get_audit_logs(limit: int = Query(50, ge=1, le=500)) -> List[Dict[str, Any]]:
-    """Retrieve recent cryptographic audit log entries from the JSONL record."""
-    log_path = Path(AUDIT_LOG_FILE)
-    if not log_path.exists():
+    """Retrieve recent cryptographic audit log records (JSONL)."""
+    log_file = Path(AUDIT_LOG_FILE)
+    if not log_file.exists():
         return []
-
-    entries = []
-    with log_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    entries.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue
-    return entries[-limit:]
+    with log_file.open("r", encoding="utf-8") as f:
+        lines = [json.loads(line) for line in f.readlines() if line.strip()]
+    return lines[-limit:]
 
 
-@app.post("/v1/audit/verify", response_model=AuditVerifyResponse, tags=["Audit & Compliance"])
-def verify_audit_integrity() -> AuditVerifyResponse:
-    """Mathematically verify the SHA-256 hash chain across all recorded audit entries."""
-    is_valid, count, message = AuditLogger.verify_integrity(AUDIT_LOG_FILE)
+@app.post("/v1/audit/verify", response_model=AuditVerifyResponse, tags=["Audit"])
+def verify_audit_chain_integrity() -> AuditVerifyResponse:
+    """Validate SHA-256 cryptographic hash-chain across all recorded transactions."""
+    valid, count, msg = AuditLogger.verify_integrity(AUDIT_LOG_FILE)
     return AuditVerifyResponse(
-        is_valid=is_valid,
+        is_valid=valid,
         records_verified=count,
-        message=message,
+        message=msg,
     )
