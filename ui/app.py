@@ -1,7 +1,7 @@
 """Unified Enterprise AI-Vault Security Platform & Conversational Chat Portal.
 
 A minimalist, high-aesthetic enterprise interface with a 1-click persona switcher,
-dual-state zero-trust security toggle, offline local LLM streaming, and cryptographic audit proofs.
+customizable background color palettes, dual-state zero-trust toggle, and cryptographic audit proofs.
 """
 
 import json
@@ -45,7 +45,72 @@ st.set_page_config(
 init_and_seed_database()
 
 # -----------------------------------------------------------------------------
-# HIGH-AESTHETIC MINIMALIST DESIGN SYSTEM (OBSIDIAN & GLASSMORPHISM)
+# 1. THEME PALETTES (CUSTOMIZABLE BACKGROUND COLORS)
+# -----------------------------------------------------------------------------
+THEMES = {
+    "Midnight Obsidian": {
+        "bg_gradient": "radial-gradient(circle at 50% 0%, #111827 0%, #090d16 65%, #05070b 100%)",
+        "bg_solid": "#090d16",
+        "sidebar_bg": "#060911",
+        "card_bg": "rgba(17, 24, 39, 0.6)",
+        "card_border": "rgba(255, 255, 255, 0.08)",
+        "accent": "#6366f1",
+    },
+    "Deep Slate": {
+        "bg_gradient": "linear-gradient(180deg, #0f172a 0%, #0b1120 100%)",
+        "bg_solid": "#0f172a",
+        "sidebar_bg": "#0b1120",
+        "card_bg": "rgba(30, 41, 59, 0.6)",
+        "card_border": "rgba(255, 255, 255, 0.09)",
+        "accent": "#38bdf8",
+    },
+    "Cyber Navy": {
+        "bg_gradient": "radial-gradient(circle at 50% 0%, #0a192f 0%, #060d1e 70%, #020617 100%)",
+        "bg_solid": "#060d1e",
+        "sidebar_bg": "#030814",
+        "card_bg": "rgba(15, 23, 42, 0.65)",
+        "card_border": "rgba(56, 189, 248, 0.15)",
+        "accent": "#0ea5e9",
+    },
+    "Pure Charcoal": {
+        "bg_gradient": "linear-gradient(180deg, #18181b 0%, #121214 100%)",
+        "bg_solid": "#121214",
+        "sidebar_bg": "#0d0d0f",
+        "card_bg": "rgba(39, 39, 42, 0.5)",
+        "card_border": "rgba(255, 255, 255, 0.08)",
+        "accent": "#a1a1aa",
+    },
+    "Titanium Matte": {
+        "bg_gradient": "linear-gradient(180deg, #1e222d 0%, #151821 100%)",
+        "bg_solid": "#1a1f2c",
+        "sidebar_bg": "#12151e",
+        "card_bg": "rgba(35, 41, 55, 0.6)",
+        "card_border": "rgba(255, 255, 255, 0.1)",
+        "accent": "#818cf8",
+    },
+}
+
+if "app_theme" not in st.session_state:
+    st.session_state["app_theme"] = "Midnight Obsidian"
+
+cur_theme = THEMES.get(st.session_state["app_theme"], THEMES["Midnight Obsidian"])
+
+# Dynamic CSS Injection using CSS Variables to avoid bracket escaping issues
+st.markdown(f"""
+<style>
+    :root {{
+        --vault-bg-gradient: {cur_theme['bg_gradient']};
+        --vault-bg-solid: {cur_theme['bg_solid']};
+        --vault-sidebar-bg: {cur_theme['sidebar_bg']};
+        --vault-card-bg: {cur_theme['card_bg']};
+        --vault-card-border: {cur_theme['card_border']};
+        --vault-accent: {cur_theme['accent']};
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# 2. CORE MINIMALIST STYLESHEET
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -59,20 +124,21 @@ st.markdown("""
         font-family: 'JetBrains Mono', monospace !important;
     }
 
-    /* Base Canvas */
+    /* Base Canvas with Dynamic Theme Background */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #111827 0%, #090d16 65%, #05070b 100%);
+        background: var(--vault-bg-gradient);
+        background-color: var(--vault-bg-solid);
         color: #f3f4f6;
     }
 
-    /* Seamless Dark Sidebar */
+    /* Seamless Dark Sidebar with Tightened Gaps (No harsh divider lines) */
     section[data-testid="stSidebar"],
     [data-testid="stSidebar"],
     [data-testid="stSidebar"] > div,
     [data-testid="stSidebarContent"],
     [data-testid="stSidebarUserContent"] {
-        background: #090d16 !important;
-        background-color: #090d16 !important;
+        background: var(--vault-sidebar-bg) !important;
+        background-color: var(--vault-sidebar-bg) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     section[data-testid="stSidebar"] *,
@@ -84,28 +150,79 @@ st.markdown("""
         color: #cbd5e1 !important;
     }
 
+    /* Tighten sidebar vertical gaps */
+    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.5rem !important;
+    }
+
+    /* Compact Sidebar Section Cards */
+    .sidebar-section-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 6px;
+    }
+
+    /* Sidebar Code & Tag Badges */
+    section[data-testid="stSidebar"] code {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #38bdf8 !important;
+        padding: 2px 6px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        font-size: 0.76rem !important;
+    }
+
+    /* Sleek Selectbox & Dropdown Menus */
+    div[data-baseweb="select"] > div {
+        background: rgba(15, 23, 42, 0.7) !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 8px !important;
+    }
+    div[data-baseweb="select"] * {
+        color: #f8fafc !important;
+    }
+    div[data-baseweb="popover"],
+    ul[data-testid="stSelectboxMenu"] {
+        background: #0f172a !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 8px !important;
+    }
+    div[data-baseweb="popover"] li,
+    ul[data-testid="stSelectboxMenu"] li {
+        background: transparent !important;
+        color: #e2e8f0 !important;
+    }
+    div[data-baseweb="popover"] li:hover,
+    ul[data-testid="stSelectboxMenu"] li:hover {
+        background: rgba(99, 102, 241, 0.2) !important;
+        color: #a5b4fc !important;
+    }
+
     /* Top Navigation Glass Bar */
     .vault-navbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: rgba(17, 24, 39, 0.65);
+        background: var(--vault-card-bg);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--vault-card-border);
         border-radius: 16px;
-        padding: 14px 22px;
-        margin-bottom: 20px;
+        padding: 12px 20px;
+        margin-bottom: 16px;
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
     }
 
     /* Sleek Cards */
     .vault-card {
-        background: rgba(17, 24, 39, 0.55);
+        background: var(--vault-card-bg);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        border: 1px solid var(--vault-card-border);
         border-radius: 16px;
-        padding: 20px;
+        padding: 18px;
         transition: all 0.2s ease;
     }
     .vault-card:hover {
@@ -115,11 +232,11 @@ st.markdown("""
 
     /* Persona Login Cards */
     .persona-card {
-        background: rgba(17, 24, 39, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--vault-card-bg);
+        border: 1px solid var(--vault-card-border);
         border-radius: 14px;
-        padding: 18px;
-        margin-bottom: 12px;
+        padding: 16px;
+        margin-bottom: 10px;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .persona-card:hover {
@@ -128,57 +245,67 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* Minimalist Badges & Pills */
+    /* Minimalist Badges & Pills - PREVENTS 2ND LINE WRAP */
     .badge-pill {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
+        gap: 5px;
+        padding: 3px 9px;
         border-radius: 9999px;
-        font-size: 0.74rem;
+        font-size: 0.72rem;
         font-weight: 600;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.02em;
         text-transform: uppercase;
+        white-space: nowrap !important;
+        flex-shrink: 0;
     }
     .badge-protected {
         background: rgba(16, 185, 129, 0.12);
         color: #34d399;
         border: 1px solid rgba(16, 185, 129, 0.25);
+        white-space: nowrap !important;
     }
     .badge-vulnerable {
         background: rgba(239, 68, 68, 0.12);
         color: #f87171;
         border: 1px solid rgba(239, 68, 68, 0.25);
+        white-space: nowrap !important;
     }
     .badge-offline {
         background: rgba(245, 158, 11, 0.12);
         color: #fbbf24;
         border: 1px solid rgba(245, 158, 11, 0.25);
+        white-space: nowrap !important;
     }
     .badge-intern {
         background: rgba(6, 182, 212, 0.15);
         color: #22d3ee;
         border: 1px solid rgba(6, 182, 212, 0.3);
+        white-space: nowrap !important;
     }
     .badge-engineer {
         background: rgba(99, 102, 241, 0.15);
         color: #a5b4fc;
         border: 1px solid rgba(99, 102, 241, 0.3);
+        white-space: nowrap !important;
     }
     .badge-hr {
         background: rgba(244, 63, 94, 0.15);
         color: #fb7185;
         border: 1px solid rgba(244, 63, 94, 0.3);
+        white-space: nowrap !important;
     }
     .badge-executive {
         background: rgba(245, 158, 11, 0.15);
         color: #fcd34d;
         border: 1px solid rgba(245, 158, 11, 0.3);
+        white-space: nowrap !important;
     }
     .badge-admin {
         background: rgba(16, 185, 129, 0.15);
         color: #6ee7b7;
         border: 1px solid rgba(16, 185, 129, 0.3);
+        white-space: nowrap !important;
     }
 
     /* Refined Streamlit Buttons */
@@ -189,7 +316,7 @@ st.markdown("""
         border-radius: 10px !important;
         font-weight: 500 !important;
         font-size: 0.85rem !important;
-        padding: 6px 14px !important;
+        padding: 5px 12px !important;
         transition: all 0.15s ease !important;
     }
     .stButton > button:hover {
@@ -230,11 +357,11 @@ st.markdown("""
 
     /* Chat Messages */
     [data-testid="stChatMessage"] {
-        background: rgba(17, 24, 39, 0.45) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        background: var(--vault-card-bg) !important;
+        border: 1px solid var(--vault-card-border) !important;
         border-radius: 14px !important;
         padding: 14px 18px !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 10px !important;
     }
 
     /* Tabs Styling */
@@ -248,9 +375,9 @@ st.markdown("""
         background-color: transparent !important;
         color: #94a3b8 !important;
         border-radius: 8px !important;
-        padding: 8px 16px !important;
+        padding: 6px 14px !important;
         font-weight: 600 !important;
-        font-size: 0.88rem !important;
+        font-size: 0.86rem !important;
         border: none !important;
     }
     .stTabs [aria-selected="true"] {
@@ -342,24 +469,23 @@ PERSONAS = {
 # =============================================================================
 if "logged_in_user" not in st.session_state or not st.session_state["logged_in_user"]:
     st.write("")
-    st.write("")
     _, center_col, _ = st.columns([1, 2.6, 1])
 
     with center_col:
         st.markdown(
             """
-            <div style="text-align: center; margin-bottom: 1.8rem;">
-                <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; margin-bottom: 12px; font-size: 1.8rem;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 14px; margin-bottom: 10px; font-size: 1.6rem;">
                     🛡️
                 </div>
-                <h1 style="font-size: 2.1rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <h1 style="font-size: 2.0rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     AI-Vault Portal
                 </h1>
-                <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 6px; margin-bottom: 0;">
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px; margin-bottom: 0;">
                     Zero-Trust Security Gateway for Offline Enterprise LLMs
                 </p>
                 <div style="margin-top: 8px;">
-                    <span class="badge-pill badge-protected">⚡ 100% Offline (Ollama Loopback)</span>
+                    <span class="badge-pill badge-protected">⚡ 100% Offline (Ollama)</span>
                     <span class="badge-pill badge-protected" style="margin-left: 6px;">🔒 Pre-Context RBAC</span>
                 </div>
             </div>
@@ -368,7 +494,7 @@ if "logged_in_user" not in st.session_state or not st.session_state["logged_in_u
         )
 
         st.markdown(
-            "<p style='color: #cbd5e1; font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;'>Select an Identity to Enter:</p>",
+            "<p style='color: #cbd5e1; font-size: 0.88rem; font-weight: 600; margin-bottom: 10px;'>Select an Identity to Enter:</p>",
             unsafe_allow_html=True
         )
 
@@ -376,16 +502,16 @@ if "logged_in_user" not in st.session_state or not st.session_state["logged_in_u
         for key, p in PERSONAS.items():
             card_html = f"""
             <div class="persona-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 1.3rem;">{p['avatar']}</span>
-                        <span style="font-weight: 700; font-size: 1rem; color: #f8fafc;">{p['full_name']}</span>
-                        <span style="color: #64748b; font-size: 0.82rem;">({p['location']})</span>
+                        <span style="font-size: 1.25rem;">{p['avatar']}</span>
+                        <span style="font-weight: 700; font-size: 0.98rem; color: #f8fafc;">{p['full_name']}</span>
+                        <span style="color: #64748b; font-size: 0.8rem;">({p['location']})</span>
                     </div>
                     <span class="badge-pill {p['badge_class']}">{p['role'].upper()}</span>
                 </div>
-                <div style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 6px;">{p['title']}</div>
-                <div style="color: #cbd5e1; font-size: 0.8rem; line-height: 1.4;">{p['summary']}</div>
+                <div style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 4px;">{p['title']}</div>
+                <div style="color: #cbd5e1; font-size: 0.78rem; line-height: 1.35;">{p['summary']}</div>
             </div>
             """
             st.markdown(card_html, unsafe_allow_html=True)
@@ -399,7 +525,7 @@ if "logged_in_user" not in st.session_state or not st.session_state["logged_in_u
 
         st.write("")
         st.markdown(
-            "<div style='text-align: center; color: #64748b; font-size: 0.78rem;'>"
+            "<div style='text-align: center; color: #64748b; font-size: 0.75rem;'>"
             "Nexus Software Systems • No passwords required in demo mode"
             "</div>",
             unsafe_allow_html=True
@@ -435,18 +561,38 @@ if "active_session_id" not in st.session_state:
     create_chat_session(st.session_state["active_session_id"], current_username, current_role, "Workspace Chat")
 active_session = st.session_state["active_session_id"]
 
-# --- MINIMALIST CLEAN SIDEBAR (COLLAPSIBLE CONTROLS) ---
+# --- MINIMALIST CLEAN SIDEBAR (NO HARSH DIVIDER LINES, TIGHT GAPS) ---
 with st.sidebar:
-    st.markdown(f"### {active_persona['avatar']} {active_persona['full_name']}")
-    st.caption(f"{active_persona['title']} • {active_persona['location']}")
+    # 1. Identity Profile Card
+    st.markdown(
+        f"""
+        <div style="margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.4rem;">{active_persona['avatar']}</span>
+                <div>
+                    <div style="font-weight: 700; font-size: 0.98rem; color: #f8fafc;">{active_persona['full_name']}</div>
+                    <div style="font-size: 0.78rem; color: #94a3b8;">{active_persona['title']} • {active_persona['location']}</div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
     if st.button("🚪 Switch Person / Log Out", use_container_width=True):
         st.session_state["logged_in_user"] = None
         st.rerun()
 
-    st.divider()
-
-    st.markdown("**🛡️ Security Mode:**")
+    # 2. Security Mode Card
+    st.markdown(
+        """
+        <div class="sidebar-section-card">
+            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 4px;">
+                🛡️ Security Perimeter
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
     defense_mode_choice = st.radio(
         "Mode Selection:",
         options=["Protected (AI-Vault Secure)", "Vulnerable (Demo Data Leak)"],
@@ -458,29 +604,40 @@ with st.sidebar:
     defense_mode_val = "hardened" if is_hardened else "vulnerable"
 
     if is_hardened:
-        st.markdown("<span class='badge-pill badge-protected'>🟢 Zero-Trust Hardened</span>", unsafe_allow_html=True)
+        st.markdown("<span class='badge-pill badge-protected'>🟢 Zero-Trust Active</span>", unsafe_allow_html=True)
     else:
-        st.markdown("<span class='badge-pill badge-vulnerable'>🔴 Vulnerable Baseline</span>", unsafe_allow_html=True)
+        st.markdown("<span class='badge-pill badge-vulnerable'>🔴 Vulnerable Demo Mode</span>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.divider()
-
-    # Local LLM Status Card
-    st.markdown("**🤖 Local Ollama LLM:**")
+    # 3. Local Ollama LLM Card
+    st.markdown(
+        """
+        <div class="sidebar-section-card">
+            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 4px;">
+                🤖 Local Ollama LLM
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
     if is_llm_online:
         st.markdown(
-            f"<div style='background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:10px 12px; font-size:0.8rem;'>"
-            f"<div style='color:#34d399; font-weight:700;'>🟢 ONLINE & READY</div>"
-            f"<div style='color:#cbd5e1; margin-top:2px;'>Model: <code>{active_llm_model}</code></div>"
-            f"<div style='color:#94a3b8; font-size:0.75rem; margin-top:2px;'>Latency: {llm_latency_ms}ms • 100% Offline</div>"
-            f"</div>",
+            f"""
+            <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem;">
+                <div style="color: #34d399; font-weight: 700;">🟢 ONLINE & READY</div>
+                <div style="color: #cbd5e1; margin-top: 2px;">Model: <code>{active_llm_model}</code></div>
+                <div style="color: #94a3b8; font-size: 0.72rem; margin-top: 2px;">Latency: {llm_latency_ms}ms • 100% Offline</div>
+            </div>
+            """,
             unsafe_allow_html=True
         )
     else:
         st.markdown(
-            "<div style='background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:10px; padding:10px 12px; font-size:0.8rem;'>"
-            "<div style='color:#f87171; font-weight:700;'>🔴 OFFLINE / FALLBACK</div>"
-            "<div style='color:#94a3b8; font-size:0.75rem;'>Using rule-based response engine.</div>"
-            "</div>",
+            """
+            <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem;">
+                <div style="color: #f87171; font-weight: 700;">🔴 OFFLINE / FALLBACK</div>
+                <div style="color: #94a3b8; font-size: 0.72rem;">Using rule-based response engine.</div>
+            </div>
+            """,
             unsafe_allow_html=True
         )
 
@@ -495,8 +652,31 @@ with st.sidebar:
             st.session_state["active_session_id"] = f"session_{current_username}"
             create_chat_session(st.session_state["active_session_id"], current_username, current_role, "Workspace Chat")
             st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.expander("⚙️ Advanced Settings", expanded=False):
+    # 4. Background Color Theme Selector Card
+    st.markdown(
+        """
+        <div class="sidebar-section-card">
+            <div style="font-weight: 700; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 4px;">
+                🎨 Background Theme
+            </div>
+        """,
+        unsafe_allow_html=True
+    )
+    theme_choice = st.selectbox(
+        "Theme Palette:",
+        options=list(THEMES.keys()),
+        index=list(THEMES.keys()).index(st.session_state.get("app_theme", "Midnight Obsidian")),
+        label_visibility="collapsed"
+    )
+    if theme_choice != st.session_state.get("app_theme"):
+        st.session_state["app_theme"] = theme_choice
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 5. Advanced Settings Card
+    with st.expander("⚙️ Advanced API Settings", expanded=False):
         current_endpoint = st.session_state.get("ollama_url", gateway.ollama_url)
         new_endpoint = st.text_input("Ollama URL:", value=current_endpoint)
         if st.button("Save URL", use_container_width=True):
@@ -507,17 +687,17 @@ with st.sidebar:
                 st.rerun()
 
 
-# --- TOP MINIMALIST NAVBAR ---
-top_col1, top_col2, top_col3 = st.columns([2.5, 2.5, 1.2])
+# --- TOP MINIMALIST NAVBAR (WIDE BADGES COLUMN, NO 2ND LINE WRAP) ---
+top_col1, top_col2, top_col3 = st.columns([1.5, 4.0, 0.9])
 
 with top_col1:
     st.markdown(
-        f"""
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.5rem;">🛡️</span>
+        """
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.4rem;">🛡️</span>
             <div>
-                <span style="font-weight: 800; font-size: 1.15rem; color: #f8fafc; letter-spacing: -0.01em;">AI-Vault</span>
-                <span style="color: #64748b; font-size: 0.85rem; margin-left: 6px;">Enterprise Assistant</span>
+                <span style="font-weight: 800; font-size: 1.1rem; color: #f8fafc; letter-spacing: -0.01em;">AI-Vault</span>
+                <span style="color: #64748b; font-size: 0.82rem; margin-left: 4px;">Enterprise Assistant</span>
             </div>
         </div>
         """,
@@ -526,11 +706,14 @@ with top_col1:
 
 with top_col2:
     mode_badge = "<span class='badge-pill badge-protected'>🛡️ Zero-Trust</span>" if is_hardened else "<span class='badge-pill badge-vulnerable'>⚠️ Vulnerable</span>"
-    llm_badge = f"<span class='badge-pill badge-protected'>⚡ {active_llm_model}</span>" if is_llm_online else "<span class='badge-pill badge-offline'>⚠️ Rule-Engine</span>"
+    short_model_name = active_llm_model.split(":")[0] if ":" in active_llm_model else active_llm_model
+    llm_badge = f"<span class='badge-pill badge-protected'>⚡ {short_model_name}</span>" if is_llm_online else "<span class='badge-pill badge-offline'>⚠️ Rule-Engine</span>"
+    persona_pill = f"<span class='badge-pill {active_persona['badge_class']}'>{active_persona['avatar']} {active_persona['full_name']} ({current_role.upper()})</span>"
+    
     st.markdown(
         f"""
-        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 100%;">
-            <span class="badge-pill {active_persona['badge_class']}">{active_persona['avatar']} {active_persona['full_name']} ({current_role.upper()})</span>
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; height: 100%;">
+            {persona_pill}
             {mode_badge}
             {llm_badge}
         </div>
@@ -558,7 +741,7 @@ tab_chat, tab_explorer, tab_audit = st.tabs([
 with tab_chat:
     # Minimalist Quick-Question Chips
     st.markdown(
-        "<div style='color: #94a3b8; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;'>SUGGESTED INQUIRIES:</div>",
+        "<div style='color: #94a3b8; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px;'>SUGGESTED INQUIRIES:</div>",
         unsafe_allow_html=True
     )
     preset_clicked_prompt = None
@@ -605,7 +788,6 @@ with tab_chat:
                 accessed = meta.get("accessed_tables", [])
                 blocked = meta.get("blocked_tables", [])
                 audit_hash = meta.get("audit_hash", "")
-                engine_name = meta.get("engine", "")
 
                 # Sleek inline badge
                 if status == "ok" and reason == "vulnerable_baseline_leak":
@@ -681,9 +863,9 @@ with tab_chat:
 with tab_explorer:
     st.markdown(
         """
-        <div style="margin-bottom: 14px;">
-            <h3 style="margin: 0; font-size: 1.25rem;">🗄️ Relational Database Schema</h3>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0 0;">
+        <div style="margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 1.2rem;">🗄️ Relational Database Schema</h3>
+            <p style="color: #94a3b8; font-size: 0.82rem; margin: 3px 0 0 0;">
                 Live records in <code>data/software_company.db</code> partitioned by role clearance.
             </p>
         </div>
@@ -729,9 +911,9 @@ with tab_explorer:
 with tab_audit:
     st.markdown(
         """
-        <div style="margin-bottom: 14px;">
-            <h3 style="margin: 0; font-size: 1.25rem;">📜 Cryptographic Audit Ledger</h3>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0 0;">
+        <div style="margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 1.2rem;">📜 Cryptographic Audit Ledger</h3>
+            <p style="color: #94a3b8; font-size: 0.82rem; margin: 3px 0 0 0;">
                 Tamper-evident SHA-256 Merkle chain in <code>logs/audit.log</code> providing forensic non-repudiation.
             </p>
         </div>
