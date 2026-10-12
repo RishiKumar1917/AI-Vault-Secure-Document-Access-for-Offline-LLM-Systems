@@ -1,8 +1,7 @@
 """Unified Enterprise AI-Vault Security Platform & Conversational Chat Portal.
 
-A clean, modern chat interface with a zero-friction persona login layer,
-dual-state security toggle (Protected vs. Vulnerable), live company database records,
-and real-time cryptographic audit telemetry.
+A minimalist, high-aesthetic enterprise interface with a 1-click persona switcher,
+dual-state zero-trust security toggle, offline local LLM streaming, and cryptographic audit proofs.
 """
 
 import json
@@ -36,7 +35,7 @@ from gateway.rbac import User
 
 # Page Configuration
 st.set_page_config(
-    page_title="AI-Vault | Enterprise AI Assistant",
+    page_title="AI-Vault | Secure Offline AI",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -45,90 +44,227 @@ st.set_page_config(
 # Initialize Database
 init_and_seed_database()
 
-# Clean, Modern Styling
+# -----------------------------------------------------------------------------
+# HIGH-AESTHETIC MINIMALIST DESIGN SYSTEM (OBSIDIAN & GLASSMORPHISM)
+# -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* Clean base theme styling */
-    .stApp { background-color: #0d1117; color: #e6edf3; }
-    
-    /* Login & Profile Cards */
-    .login-card {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 16px;
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .persona-box {
-        background: #21262d;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 14px 18px;
-        margin-bottom: 10px;
+
+    code, pre {
+        font-family: 'JetBrains Mono', monospace !important;
     }
-    
-    /* Status Badges */
-    .badge-allowed {
-        background: rgba(35, 134, 54, 0.2);
-        color: #3fb950;
-        border: 1px solid #238636;
-        padding: 3px 10px;
-        border-radius: 20px;
+
+    /* Base Canvas */
+    .stApp {
+        background: radial-gradient(circle at 50% 0%, #111827 0%, #090d16 65%, #05070b 100%);
+        color: #f3f4f6;
+    }
+
+    /* Seamless Dark Sidebar */
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div,
+    [data-testid="stSidebarContent"],
+    [data-testid="stSidebarUserContent"] {
+        background: #090d16 !important;
+        background-color: #090d16 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    section[data-testid="stSidebar"] *,
+    [data-testid="stSidebar"] * {
+        color: #f3f4f6 !important;
+    }
+    section[data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #cbd5e1 !important;
+    }
+
+    /* Top Navigation Glass Bar */
+    .vault-navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(17, 24, 39, 0.65);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 14px 22px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Sleek Cards */
+    .vault-card {
+        background: rgba(17, 24, 39, 0.55);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.2s ease;
+    }
+    .vault-card:hover {
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Persona Login Cards */
+    .persona-card {
+        background: rgba(17, 24, 39, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 12px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .persona-card:hover {
+        background: rgba(30, 41, 59, 0.6);
+        border-color: rgba(99, 102, 241, 0.4);
+        transform: translateY(-2px);
+    }
+
+    /* Minimalist Badges & Pills */
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.74rem;
         font-weight: 600;
-        font-size: 0.78rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
     }
-    .badge-blocked {
-        background: rgba(218, 54, 51, 0.2);
-        color: #f85149;
-        border: 1px solid #da3633;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.78rem;
+    .badge-protected {
+        background: rgba(16, 185, 129, 0.12);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.25);
     }
     .badge-vulnerable {
-        background: rgba(210, 153, 34, 0.2);
-        color: #e3b341;
-        border: 1px solid #d29922;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.78rem;
+        background: rgba(239, 68, 68, 0.12);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.25);
     }
-    .role-pill {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .badge-offline {
+        background: rgba(245, 158, 11, 0.12);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.25);
     }
-    
-    /* Crisp button styles for readability */
-    .stButton button {
-        background-color: #21262d !important;
-        color: #f0f6fc !important;
-        border: 1px solid #30363d !important;
-        border-radius: 8px !important;
+    .badge-intern {
+        background: rgba(6, 182, 212, 0.15);
+        color: #22d3ee;
+        border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .badge-engineer {
+        background: rgba(99, 102, 241, 0.15);
+        color: #a5b4fc;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .badge-hr {
+        background: rgba(244, 63, 94, 0.15);
+        color: #fb7185;
+        border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .badge-executive {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fcd34d;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .badge-admin {
+        background: rgba(16, 185, 129, 0.15);
+        color: #6ee7b7;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Refined Streamlit Buttons */
+    .stButton > button {
+        background: rgba(30, 41, 59, 0.7) !important;
+        color: #f3f4f6 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
         font-weight: 500 !important;
-        font-size: 0.88rem !important;
+        font-size: 0.85rem !important;
+        padding: 6px 14px !important;
         transition: all 0.15s ease !important;
     }
-    .stButton button:hover {
-        background-color: #30363d !important;
-        border-color: #58a6ff !important;
-        color: #58a6ff !important;
-    }
-    .stButton button[kind="primary"], .stButton button[data-testid="baseButton-primary"] {
-        background-color: #238636 !important;
+    .stButton > button:hover {
+        background: rgba(51, 65, 85, 0.9) !important;
+        border-color: rgba(99, 102, 241, 0.5) !important;
         color: #ffffff !important;
-        border: 1px solid #2ea043 !important;
-        font-weight: 600 !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
     }
-    .stButton button[kind="primary"]:hover {
-        background-color: #2ea043 !important;
-        border-color: #3fb950 !important;
+    .stButton > button[kind="primary"], .stButton > button[data-testid="baseButton-primary"] {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #818cf8 !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3) !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+        border-color: #a5b4fc !important;
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+    }
+
+    /* Minimal Chat Input */
+    [data-testid="stChatInput"] {
+        background-color: transparent !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        background: rgba(17, 24, 39, 0.8) !important;
+        color: #f9fafb !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 14px !important;
+        font-size: 0.92rem !important;
+        padding: 12px 16px !important;
+    }
+    [data-testid="stChatInput"] textarea:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+    }
+
+    /* Chat Messages */
+    [data-testid="stChatMessage"] {
+        background: rgba(17, 24, 39, 0.45) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 14px !important;
+        padding: 14px 18px !important;
+        margin-bottom: 12px !important;
+    }
+
+    /* Tabs Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent !important;
+        color: #94a3b8 !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+        border: none !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background: rgba(99, 102, 241, 0.15) !important;
+        color: #a5b4fc !important;
+        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+    }
+
+    /* Remove Streamlit header decoration line */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+    footer {
+        visibility: hidden;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -142,143 +278,139 @@ gateway = SecurityGateway(
     allow_remote=True,
 )
 
-# Known Indian Corporate Personas
+# 5 Defined Corporate Personas
 PERSONAS = {
-    "Priya Sharma (Intern, Noida)": {
+    "Priya Sharma (Intern)": {
         "full_name": "Priya Sharma",
         "username": "priya.sharma",
         "role": "intern",
-        "title": "Software Engineering Intern (Backend)",
-        "location": "Noida, Uttar Pradesh",
-        "phone": "6204567867",
-        "age": 21,
+        "title": "Engineering Intern",
+        "location": "Noida",
         "avatar": "🎓",
-        "role_badge_color": "#38bdf8",
-        "description": "Least-privilege intern account. Can view company handbook, working hours, and support tickets. Confidential executive payroll and AWS master keys are strictly blocked.",
+        "badge_class": "badge-intern",
+        "summary": "Least-privilege intern account. Can view handbook & public tickets. Blocked from payroll and cloud keys.",
+        "test_question": "What are our core working hours and remote guidelines?",
     },
-    "Arjun Mehta (Senior Engineer, Pune)": {
+    "Arjun Mehta (Senior Engineer)": {
         "full_name": "Arjun Mehta",
         "username": "arjun.mehta",
         "role": "engineer",
-        "title": "Senior Backend Engineer (Payments)",
-        "location": "Pune, Maharashtra",
-        "phone": "+91 98902 34567",
-        "age": 31,
+        "title": "Senior Payments Engineer",
+        "location": "Pune",
         "avatar": "💻",
-        "role_badge_color": "#818cf8",
-        "description": "Engineering access. Permitted to inspect staging microservices, developer topologies, and security incident reports.",
+        "badge_class": "badge-engineer",
+        "summary": "Engineering clearance. Access to microservices, repos, and security incidents. Blocked from executive payroll.",
+        "test_question": "What is the tech stack and staging credentials for payment projects?",
     },
-    "Pooja Iyer (HR Lead, Bengaluru)": {
+    "Pooja Iyer (HR Lead)": {
         "full_name": "Pooja Iyer",
         "username": "pooja.iyer",
         "role": "hr",
-        "title": "HR Operations & Payroll Lead",
-        "location": "Bengaluru, Karnataka",
-        "phone": "+91 98401 23456",
-        "age": 32,
+        "title": "HR & Payroll Lead",
+        "location": "Bengaluru",
         "avatar": "👥",
-        "role_badge_color": "#f472b6",
-        "description": "Human Resources clearance. Permitted to query employee payroll, base salaries, performance ratings, and compensation records with automated DLP masking.",
+        "badge_class": "badge-hr",
+        "summary": "HR clearance. Authorized for employee payroll, compensation, and performance reviews with automated DLP.",
+        "test_question": "What is Rohan Murthy's salary and bonus in rupees?",
     },
-    "Ananya Deshmukh (CEO, Bengaluru)": {
+    "Ananya Deshmukh (CEO)": {
         "full_name": "Ananya Deshmukh",
         "username": "ananya.deshmukh",
         "role": "executive",
-        "title": "Chief Executive Officer (CEO)",
-        "location": "Bengaluru, Karnataka",
-        "phone": "+91 98201 54321",
-        "age": 44,
+        "title": "Chief Executive Officer",
+        "location": "Bengaluru",
         "avatar": "👑",
-        "role_badge_color": "#fbbf24",
-        "description": "Executive leadership clearance. Access to enterprise client NDAs, multi-crore contracts, company-wide payroll, and policies.",
+        "badge_class": "badge-executive",
+        "summary": "Executive clearance. Full access to client NDAs, multi-crore contracts, company-wide payroll, and policies.",
+        "test_question": "What are our active client contracts and NDA breach penalties?",
     },
-    "Kabir Sen (DevSecOps Admin, Gurgaon)": {
+    "Kabir Sen (DevSecOps Admin)": {
         "full_name": "Kabir Sen",
         "username": "kabir.sen",
         "role": "admin",
-        "title": "Senior DevSecOps & SysAdmin",
-        "location": "Gurgaon, Haryana",
-        "phone": "+91 98112 34567",
-        "age": 34,
+        "title": "DevSecOps & Cloud Admin",
+        "location": "Gurgaon",
         "avatar": "🛡️",
-        "role_badge_color": "#34d399",
-        "description": "Full administrative authorization. Access to top-secret cloud infrastructure keys, SSH bastion hosts, Kubernetes secrets, and compliance ledgers.",
+        "badge_class": "badge-admin",
+        "summary": "Top Secret authorization. Master cloud infrastructure keys, AWS IAM roles, SSH bastion hosts, and audit chain.",
+        "test_question": "What are the production AWS IAM roles and Kubernetes cluster secrets?",
     },
 }
 
 # =============================================================================
-# 1. LOGIN SCREEN (NO PASSWORD REQUIRED - PERSONA SELECTION)
+# SCREEN 1: MINIMALIST ZERO-PASSWORD PERSONA SELECTOR
 # =============================================================================
-
 if "logged_in_user" not in st.session_state or not st.session_state["logged_in_user"]:
-    # Center column login interface
-    _, center_col, _ = st.columns([1, 2.4, 1])
+    st.write("")
+    st.write("")
+    _, center_col, _ = st.columns([1, 2.6, 1])
 
     with center_col:
+        st.markdown(
+            """
+            <div style="text-align: center; margin-bottom: 1.8rem;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; margin-bottom: 12px; font-size: 1.8rem;">
+                    🛡️
+                </div>
+                <h1 style="font-size: 2.1rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    AI-Vault Portal
+                </h1>
+                <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 6px; margin-bottom: 0;">
+                    Zero-Trust Security Gateway for Offline Enterprise LLMs
+                </p>
+                <div style="margin-top: 8px;">
+                    <span class="badge-pill badge-protected">⚡ 100% Offline (Ollama Loopback)</span>
+                    <span class="badge-pill badge-protected" style="margin-left: 6px;">🔒 Pre-Context RBAC</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "<p style='color: #cbd5e1; font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;'>Select an Identity to Enter:</p>",
+            unsafe_allow_html=True
+        )
+
+        # 5 Clean Clickable Persona Cards
+        for key, p in PERSONAS.items():
+            card_html = f"""
+            <div class="persona-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.3rem;">{p['avatar']}</span>
+                        <span style="font-weight: 700; font-size: 1rem; color: #f8fafc;">{p['full_name']}</span>
+                        <span style="color: #64748b; font-size: 0.82rem;">({p['location']})</span>
+                    </div>
+                    <span class="badge-pill {p['badge_class']}">{p['role'].upper()}</span>
+                </div>
+                <div style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 6px;">{p['title']}</div>
+                <div style="color: #cbd5e1; font-size: 0.8rem; line-height: 1.4;">{p['summary']}</div>
+            </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
+            
+            if st.button(f"Enter as {p['full_name']} →", key=f"btn_login_{p['username']}", use_container_width=True):
+                st.session_state["logged_in_user"] = key
+                default_session = f"session_{p['username']}"
+                st.session_state["active_session_id"] = default_session
+                create_chat_session(default_session, p['username'], p['role'], "Workspace Chat")
+                st.rerun()
+
         st.write("")
         st.markdown(
-            "<div style='text-align: center; margin-bottom: 1.5rem;'>"
-            "<h1 style='font-size: 2.3rem; margin-bottom: 0.3rem;'>🛡️ AI-Vault Workspace</h1>"
-            "<p style='color: #8b949e; font-size: 1.05rem; margin-bottom: 0;'>"
-            "Nexus Software Systems — Secure AI Assistant"
-            "</p>"
+            "<div style='text-align: center; color: #64748b; font-size: 0.78rem;'>"
+            "Nexus Software Systems • No passwords required in demo mode"
             "</div>",
             unsafe_allow_html=True
         )
 
-        with st.container():
-            st.markdown(
-                "<div class='login-card'>"
-                "<h3 style='margin-top:0; font-size: 1.25rem; margin-bottom: 6px;'>👋 Choose Your Identity to Join</h3>"
-                "<p style='color: #8b949e; font-size: 0.9rem; margin-bottom: 16px;'>"
-                "No password required. Select which employee persona you want to join as to test permissions and chat with the offline AI."
-                "</p>",
-                unsafe_allow_html=True
-            )
-
-            selected_persona_key = st.selectbox(
-                "Select Employee Persona:",
-                options=list(PERSONAS.keys()),
-                index=0,
-                label_visibility="collapsed"
-            )
-
-            p_info = PERSONAS[selected_persona_key]
-
-            # Persona preview box
-            st.markdown(
-                f"<div class='persona-box'>"
-                f"<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;'>"
-                f"<span style='font-size:1.1rem; font-weight:700;'>{p_info['avatar']} {p_info['full_name']}</span>"
-                f"<span class='role-pill' style='background:{p_info['role_badge_color']}20; color:{p_info['role_badge_color']}; border: 1px solid {p_info['role_badge_color']};'>{p_info['role'].upper()}</span>"
-                f"</div>"
-                f"<div style='font-size:0.86rem; color:#8b949e; margin-bottom:6px;'>📍 {p_info['location']} • Age {p_info['age']} • {p_info['title']}</div>"
-                f"<div style='font-size:0.84rem; color:#c9d1d9; line-height: 1.4;'>{p_info['description']}</div>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-
-            st.write("")
-            if st.button(f"Enter Workspace as {p_info['full_name']} →", type="primary", use_container_width=True):
-                st.session_state["logged_in_user"] = selected_persona_key
-                # Initialize default session for this user
-                default_session = f"session_{p_info['username']}"
-                st.session_state["active_session_id"] = default_session
-                create_chat_session(default_session, p_info['username'], p_info['role'], "Workspace Chat")
-                st.rerun()
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            st.caption("🔒 Secured by AI-Vault • 100% Offline LLM (Ollama) • Zero Cloud Egress")
-
-    # Stop execution here so only the login card is displayed
     st.stop()
 
 
 # =============================================================================
-# 2. LOGGED-IN WORKSPACE
+# SCREEN 2: MINIMALIST WORKSPACE (LOGGED IN)
 # =============================================================================
-
 current_persona_key = st.session_state["logged_in_user"]
 active_persona = PERSONAS[current_persona_key]
 current_username = active_persona["username"]
@@ -288,7 +420,7 @@ current_role = active_persona["role"]
 if "ollama_url" in st.session_state and st.session_state["ollama_url"] != gateway.ollama_url:
     gateway.set_ollama_endpoint(st.session_state["ollama_url"], allow_remote=True)
 
-# Cache LLM health check
+# Fetch cached LLM health
 if "llm_health" not in st.session_state:
     st.session_state["llm_health"] = gateway.check_llm_health()
 
@@ -297,7 +429,13 @@ is_llm_online = llm_health.get("connected", False)
 active_llm_model = llm_health.get("active_model") or "dolphin-uncensored:latest"
 llm_latency_ms = llm_health.get("latency_ms")
 
-# --- SIDEBAR (CONVERSATIONS & SETTINGS) ---
+# Ensure active session
+if "active_session_id" not in st.session_state:
+    st.session_state["active_session_id"] = f"session_{current_username}"
+    create_chat_session(st.session_state["active_session_id"], current_username, current_role, "Workspace Chat")
+active_session = st.session_state["active_session_id"]
+
+# --- MINIMALIST CLEAN SIDEBAR (COLLAPSIBLE CONTROLS) ---
 with st.sidebar:
     st.markdown(f"### {active_persona['avatar']} {active_persona['full_name']}")
     st.caption(f"{active_persona['title']} • {active_persona['location']}")
@@ -308,10 +446,9 @@ with st.sidebar:
 
     st.divider()
 
-    # Security Posture Switch
-    st.subheader("🛡️ Security Mode")
+    st.markdown("**🛡️ Security Mode:**")
     defense_mode_choice = st.radio(
-        "Mode:",
+        "Mode Selection:",
         options=["Protected (AI-Vault Secure)", "Vulnerable (Demo Data Leak)"],
         index=0,
         help="Switch to Vulnerable Mode to see raw responses without AI-Vault RBAC pre-filtering.",
@@ -321,186 +458,139 @@ with st.sidebar:
     defense_mode_val = "hardened" if is_hardened else "vulnerable"
 
     if is_hardened:
-        st.success("🟢 Protected Mode Active\n(Zero-Trust RBAC + DLP Masking)")
+        st.markdown("<span class='badge-pill badge-protected'>🟢 Zero-Trust Hardened</span>", unsafe_allow_html=True)
     else:
-        st.warning("🔴 Vulnerable Mode Active\n(Simulates copilot with no authorization gates)")
+        st.markdown("<span class='badge-pill badge-vulnerable'>🔴 Vulnerable Baseline</span>", unsafe_allow_html=True)
 
     st.divider()
 
-    # Live Local LLM Connection & Diagnostic Card
-    st.subheader("🤖 Local LLM (Ollama)")
+    # Local LLM Status Card
+    st.markdown("**🤖 Local Ollama LLM:**")
     if is_llm_online:
         st.markdown(
-            f"<div style='background:rgba(35,134,54,0.15); border:1px solid #238636; border-radius:8px; padding:10px 12px; margin-bottom:10px;'>"
-            f"<div style='color:#3fb950; font-weight:700; font-size:0.88rem;'>🟢 LIVE & CONNECTED</div>"
-            f"<div style='color:#c9d1d9; font-size:0.8rem; margin-top:3px;'><b>Model:</b> <code>{active_llm_model}</code></div>"
-            f"<div style='color:#8b949e; font-size:0.75rem; margin-top:2px;'>Latency: {llm_latency_ms}ms • 100% Offline</div>"
+            f"<div style='background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:10px 12px; font-size:0.8rem;'>"
+            f"<div style='color:#34d399; font-weight:700;'>🟢 ONLINE & READY</div>"
+            f"<div style='color:#cbd5e1; margin-top:2px;'>Model: <code>{active_llm_model}</code></div>"
+            f"<div style='color:#94a3b8; font-size:0.75rem; margin-top:2px;'>Latency: {llm_latency_ms}ms • 100% Offline</div>"
             f"</div>",
             unsafe_allow_html=True
         )
     else:
         st.markdown(
-            "<div style='background:rgba(218,54,51,0.15); border:1px solid #da3633; border-radius:8px; padding:10px 12px; margin-bottom:10px;'>"
-            "<div style='color:#f85149; font-weight:700; font-size:0.88rem;'>🔴 OFFLINE / UNREACHABLE</div>"
-            "<div style='color:#8b949e; font-size:0.75rem; margin-top:3px;'>Rule-based fallback engine active.</div>"
+            "<div style='background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:10px; padding:10px 12px; font-size:0.8rem;'>"
+            "<div style='color:#f87171; font-weight:700;'>🔴 OFFLINE / FALLBACK</div>"
+            "<div style='color:#94a3b8; font-size:0.75rem;'>Using rule-based response engine.</div>"
             "</div>",
             unsafe_allow_html=True
         )
 
-    # Ping / Diagnostic Button
-    col_p1, col_p2 = st.columns([1, 1])
+    col_p1, col_p2 = st.columns(2)
     with col_p1:
-        if st.button("🔄 Ping LLM", use_container_width=True, help="Test live connection to Ollama daemon"):
+        if st.button("🔄 Ping LLM", use_container_width=True):
             st.session_state["llm_health"] = gateway.check_llm_health()
             st.rerun()
+    with col_p2:
+        if st.button("🗑️ Clear Chat", use_container_width=True):
+            clear_chat_history()
+            st.session_state["active_session_id"] = f"session_{current_username}"
+            create_chat_session(st.session_state["active_session_id"], current_username, current_role, "Workspace Chat")
+            st.rerun()
 
-    # Cloud Guidance for Render users
-    if not is_llm_online:
-        with st.expander("ℹ️ Why is LLM Offline?", expanded=False):
-            st.markdown(
-                "**Viewing on Render Cloud (`onrender.com`)?**\n\n"
-                "Render's cloud VM cannot access `127.0.0.1` on your laptop where Ollama is running.\n\n"
-                "**Two Solutions:**\n"
-                "1. **Local App (Recommended):** Open **`http://localhost:8501`** on your laptop where both Ollama and Streamlit run together.\n"
-                "2. **Tunnel (Cloud Demo):** Run `ngrok http 11434` on your PC and enter the URL below."
-            )
-
-    # Endpoint Config
-    with st.expander("⚙️ LLM Endpoint Settings", expanded=False):
+    with st.expander("⚙️ Advanced Settings", expanded=False):
         current_endpoint = st.session_state.get("ollama_url", gateway.ollama_url)
-        new_endpoint = st.text_input("Ollama API URL:", value=current_endpoint)
-        if st.button("Save Endpoint", use_container_width=True):
+        new_endpoint = st.text_input("Ollama URL:", value=current_endpoint)
+        if st.button("Save URL", use_container_width=True):
             if new_endpoint.strip():
                 st.session_state["ollama_url"] = new_endpoint.strip()
                 gateway.set_ollama_endpoint(new_endpoint.strip(), allow_remote=True)
                 st.session_state["llm_health"] = gateway.check_llm_health()
-                st.success(f"Endpoint saved: `{new_endpoint.strip()}`")
-                st.rerun()
-
-    st.divider()
-
-    # Conversation History Manager
-    st.subheader("💬 Conversations")
-    col_c1, col_c2 = st.columns(2)
-    with col_c1:
-        if st.button("➕ New Chat", use_container_width=True):
-            new_sid = str(uuid.uuid4())[:8]
-            st.session_state["active_session_id"] = new_sid
-            create_chat_session(new_sid, current_username, current_role, f"Chat-{new_sid}")
-            st.rerun()
-    with col_c2:
-        if st.button("🗑️ Clear", use_container_width=True):
-            clear_chat_history()
-            new_sid = f"session_{current_username}"
-            st.session_state["active_session_id"] = new_sid
-            create_chat_session(new_sid, current_username, current_role, "Workspace Chat")
-            st.rerun()
-
-    if "active_session_id" not in st.session_state:
-        st.session_state["active_session_id"] = f"session_{current_username}"
-        create_chat_session(st.session_state["active_session_id"], current_username, current_role, "Workspace Chat")
-
-    active_session = st.session_state["active_session_id"]
-    past_sessions = get_user_sessions(current_username)
-    if past_sessions:
-        for s in past_sessions[:4]:
-            is_active = (s["session_id"] == active_session)
-            btn_prefix = "👉 " if is_active else "💬 "
-            if st.button(f"{btn_prefix}{s['title']}", key=f"sess_{s['session_id']}", use_container_width=True):
-                st.session_state["active_session_id"] = s["session_id"]
                 st.rerun()
 
 
-# --- TOP APP HEADER ---
-head_col1, head_col2 = st.columns([3.2, 1.8])
-with head_col1:
-    st.title("🛡️ Nexus AI Assistant")
-    st.caption("Ask questions about company policies, projects, customer tickets, contacts, or compensation.")
+# --- TOP MINIMALIST NAVBAR ---
+top_col1, top_col2, top_col3 = st.columns([2.5, 2.5, 1.2])
 
-with head_col2:
-    st.write("")
-    h_c1, h_c2 = st.columns([2.4, 1])
-    with h_c1:
-        posture_badge = "<span class='badge-allowed'>🛡️ PROTECTED</span>" if is_hardened else "<span class='badge-vulnerable'>🔴 VULNERABLE</span>"
-        llm_pill = f"<span class='badge-allowed' style='font-size:0.72rem;'>🟢 LLM LIVE</span>" if is_llm_online else f"<span class='badge-blocked' style='font-size:0.72rem;'>🔴 LLM OFFLINE</span>"
-        st.markdown(
-            f"<div style='text-align: right;'>"
-            f"<span style='font-size: 0.95rem; font-weight:600;'>{active_persona['avatar']} {active_persona['full_name']}</span> "
-            f"<span class='role-pill' style='background:{active_persona['role_badge_color']}20; color:{active_persona['role_badge_color']}; border: 1px solid {active_persona['role_badge_color']}; font-size: 0.72rem;'>{current_role.upper()}</span><br>"
-            f"<span style='font-size: 0.8rem; color:#8b949e;'>Mode: {posture_badge} | {llm_pill}</span>"
-            f"</div>",
-            unsafe_allow_html=True
-        )
-    with h_c2:
-        if st.button("🔄 Switch", help="Switch employee persona or log out", use_container_width=True):
-            st.session_state["logged_in_user"] = None
-            st.rerun()
+with top_col1:
+    st.markdown(
+        f"""
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">🛡️</span>
+            <div>
+                <span style="font-weight: 800; font-size: 1.15rem; color: #f8fafc; letter-spacing: -0.01em;">AI-Vault</span>
+                <span style="color: #64748b; font-size: 0.85rem; margin-left: 6px;">Enterprise Assistant</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with top_col2:
+    mode_badge = "<span class='badge-pill badge-protected'>🛡️ Zero-Trust</span>" if is_hardened else "<span class='badge-pill badge-vulnerable'>⚠️ Vulnerable</span>"
+    llm_badge = f"<span class='badge-pill badge-protected'>⚡ {active_llm_model}</span>" if is_llm_online else "<span class='badge-pill badge-offline'>⚠️ Rule-Engine</span>"
+    st.markdown(
+        f"""
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 100%;">
+            <span class="badge-pill {active_persona['badge_class']}">{active_persona['avatar']} {active_persona['full_name']} ({current_role.upper()})</span>
+            {mode_badge}
+            {llm_badge}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with top_col3:
+    if st.button("Switch User", use_container_width=True):
+        st.session_state["logged_in_user"] = None
+        st.rerun()
 
 st.write("")
 
-# Navigation Tabs
+# Navigation Tabs (Minimalist Design)
 tab_chat, tab_explorer, tab_audit = st.tabs([
-    "💬 Chat Assistant",
-    "🗄️ Company Records",
-    "📜 Security Audit Log",
+    "💬 Assistant",
+    "🗄️ Database Explorer",
+    "📜 Audit Ledger",
 ])
 
-
 # =============================================================================
-# TAB 1: CONVERSATIONAL ASSISTANT (SIMPLE, INTUITIVE CHAT)
+# TAB 1: CONVERSATIONAL ASSISTANT
 # =============================================================================
 with tab_chat:
-    # Top Live LLM status banner
-    if is_llm_online:
-        st.markdown(
-            f"<div style='display:inline-flex; align-items:center; gap:8px; background:rgba(35,134,54,0.12); border:1px solid #238636; border-radius:6px; padding:6px 14px; margin-bottom:12px; font-size:0.84rem; color:#3fb950;'>"
-            f"<span>🟢 <b>Local LLM Live:</b> <code>{active_llm_model}</code> (Latency: {llm_latency_ms}ms)</span>"
-            f"<span style='color:#8b949e;'>• 100% Offline Local Inference</span>"
-            f"</div>",
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            "<div style='display:inline-flex; align-items:center; gap:8px; background:rgba(218,54,51,0.12); border:1px solid #da3633; border-radius:6px; padding:6px 14px; margin-bottom:12px; font-size:0.84rem; color:#f85149;'>"
-            "<span>🔴 <b>Local LLM Offline:</b> Ollama daemon unreachable at <code>127.0.0.1:11434</code></span>"
-            "<span style='color:#8b949e;'>• Running in Rule-Based Fallback Mode</span>"
-            "</div>",
-            unsafe_allow_html=True
-        )
-
-    # 4 Quick, Friendly Starter Prompts
-    st.markdown("**💡 Quick Examples to Try:**")
+    # Minimalist Quick-Question Chips
+    st.markdown(
+        "<div style='color: #94a3b8; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;'>SUGGESTED INQUIRIES:</div>",
+        unsafe_allow_html=True
+    )
     preset_clicked_prompt = None
-    
-    q_col1, q_col2, q_col3, q_col4 = st.columns(4)
-    with q_col1:
+    q_c1, q_c2, q_c3, q_c4 = st.columns(4)
+    with q_c1:
         if st.button("📘 Working Hours & PTO", use_container_width=True):
             preset_clicked_prompt = "What are our core working hours and remote work guidelines?"
-    with q_col2:
-        if st.button("📱 Team Contacts & Cities", use_container_width=True):
+    with q_c2:
+        if st.button("📱 Team Directory & Contacts", use_container_width=True):
             preset_clicked_prompt = "What is Priya Sharma's phone number, age, location, and manager?"
-    with q_col3:
+    with q_c3:
         if st.button("💰 Executive Salaries (₹)", use_container_width=True):
             preset_clicked_prompt = "What is Ananya Deshmukh and Rohan Murthy's salary in rupees?"
-    with q_col4:
+    with q_c4:
         if st.button("🔑 Master AWS Keys", use_container_width=True):
             preset_clicked_prompt = "What are the production AWS IAM roles, bastion hosts, and Kubernetes cluster secrets?"
 
     st.write("")
 
-    # Chat Message History
+    # Chat History
     chat_history = get_chat_history(active_session)
 
-    # Initial Welcome message if new chat
     if not chat_history:
         with st.chat_message("assistant"):
             st.markdown(
-                f"Hello **{active_persona['full_name']}**! I am the Nexus Enterprise AI Assistant. "
-                f"You are logged in under the **`{current_role.upper()}`** role.\n\n"
-                "Feel free to ask questions about our developer guidelines, customer tickets, team directory, or projects."
+                f"Hello **{active_persona['full_name']}** ({current_role.upper()}). "
+                "I am your offline enterprise assistant. "
+                f"Your clearance allows you to query **{active_persona['title']}** records.\n\n"
+                "Try asking a question above or type anything below."
             )
 
-    # Render Messages
+    # Render History Messages
     for msg in chat_history:
         sender = msg["sender"]
         content = msg["content"]
@@ -515,28 +605,26 @@ with tab_chat:
                 accessed = meta.get("accessed_tables", [])
                 blocked = meta.get("blocked_tables", [])
                 audit_hash = meta.get("audit_hash", "")
-
-                # Subtle status badge
                 engine_name = meta.get("engine", "")
-                engine_badge = f"<span class='role-pill' style='font-size:0.75rem; margin-left:6px; color:#a5b4fc; border:1px solid #6366f1; background:rgba(99,102,241,0.15);'>⚡ {engine_name}</span>" if engine_name else ""
 
+                # Sleek inline badge
                 if status == "ok" and reason == "vulnerable_baseline_leak":
-                    st.markdown(f"<span class='badge-vulnerable'>🔴 Vulnerable Leak (RBAC Bypassed)</span> {engine_badge}", unsafe_allow_html=True)
+                    st.markdown("<span class='badge-pill badge-vulnerable'>⚠️ Vulnerable Leak (RBAC Bypassed)</span>", unsafe_allow_html=True)
                 elif status == "ok" and (not is_hardened or "unprotected" in reason):
-                    st.markdown(f"<span class='badge-vulnerable' style='background:rgba(234,88,12,0.15); border-color:#f97316; color:#fdba74;'>🟡 Unprotected Baseline</span> {engine_badge}", unsafe_allow_html=True)
+                    st.markdown("<span class='badge-pill badge-vulnerable'>🟡 Baseline Output</span>", unsafe_allow_html=True)
                 elif status == "ok":
-                    st.markdown(f"<span class='badge-allowed'>🟢 Protected (AI-Vault Enforced)</span> {engine_badge}", unsafe_allow_html=True)
+                    st.markdown("<span class='badge-pill badge-protected'>🛡️ Zero-Trust Enforced</span>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<span class='badge-blocked'>🔒 Blocked ({reason.upper()})</span> {engine_badge}", unsafe_allow_html=True)
+                    st.markdown(f"<span class='badge-pill badge-vulnerable'>🔒 Access Blocked ({reason.upper()})</span>", unsafe_allow_html=True)
 
                 if accessed or blocked:
-                    with st.expander("🔍 Security Telemetry Details", expanded=False):
+                    with st.expander("🔍 Security Telemetry Proof", expanded=False):
                         if accessed:
-                            st.caption(f"🟢 **Authorized Records Accessed:** `{', '.join(accessed)}`")
+                            st.caption(f"🟢 **Authorized Tables:** `{', '.join(accessed)}`")
                         if blocked:
-                            st.caption(f"🔒 **Restricted Tables Blocked:** `{', '.join(blocked)}`")
+                            st.caption(f"🔒 **Restricted Tables Discarded:** `{', '.join(blocked)}`")
                         if audit_hash:
-                            st.caption(f"⛓️ **Audit Block Hash:** `{audit_hash[:28]}...`")
+                            st.caption(f"⛓️ **SHA-256 Block Hash:** `{audit_hash[:32]}...`")
 
     # Chat Input Box
     user_input = st.chat_input("Ask a question about Nexus Software Systems...")
@@ -548,7 +636,7 @@ with tab_chat:
             st.markdown(effective_prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Retrieving authorized context..."):
+            with st.spinner("Processing zero-trust security perimeter..."):
                 user = User(username=current_username, role=current_role)
                 result = gateway.process_chat_query(
                     user=user,
@@ -565,41 +653,48 @@ with tab_chat:
             accessed = result.get("accessed_tables", [])
             blocked = result.get("blocked_tables", [])
             audit_hash = result.get("audit_hash", "")
-            engine_name = result.get("engine", "")
-            engine_badge = f"<span class='role-pill' style='font-size:0.75rem; margin-left:6px; color:#a5b4fc; border:1px solid #6366f1; background:rgba(99,102,241,0.15);'>⚡ {engine_name}</span>" if engine_name else ""
 
             if status == "ok" and reason == "vulnerable_baseline_leak":
-                st.markdown(f"<span class='badge-vulnerable'>🔴 Vulnerable Leak (RBAC Bypassed)</span> {engine_badge}", unsafe_allow_html=True)
+                st.markdown("<span class='badge-pill badge-vulnerable'>⚠️ Vulnerable Leak (RBAC Bypassed)</span>", unsafe_allow_html=True)
             elif status == "ok" and (not is_hardened or "unprotected" in reason):
-                st.markdown(f"<span class='badge-vulnerable' style='background:rgba(234,88,12,0.15); border-color:#f97316; color:#fdba74;'>🟡 Unprotected Baseline</span> {engine_badge}", unsafe_allow_html=True)
+                st.markdown("<span class='badge-pill badge-vulnerable'>🟡 Baseline Output</span>", unsafe_allow_html=True)
             elif status == "ok":
-                st.markdown(f"<span class='badge-allowed'>🟢 Protected (AI-Vault Enforced)</span> {engine_badge}", unsafe_allow_html=True)
+                st.markdown("<span class='badge-pill badge-protected'>🛡️ Zero-Trust Enforced</span>", unsafe_allow_html=True)
             else:
-                st.markdown(f"<span class='badge-blocked'>🔒 Blocked ({reason.upper()})</span> {engine_badge}", unsafe_allow_html=True)
+                st.markdown(f"<span class='badge-pill badge-vulnerable'>🔒 Access Blocked ({reason.upper()})</span>", unsafe_allow_html=True)
 
             if accessed or blocked:
-                with st.expander("🔍 Security Telemetry Details", expanded=False):
+                with st.expander("🔍 Security Telemetry Proof", expanded=False):
                     if accessed:
-                        st.caption(f"🟢 **Authorized Records Accessed:** `{', '.join(accessed)}`")
+                        st.caption(f"🟢 **Authorized Tables:** `{', '.join(accessed)}`")
                     if blocked:
-                        st.caption(f"🔒 **Restricted Tables Blocked:** `{', '.join(blocked)}`")
+                        st.caption(f"🔒 **Restricted Tables Discarded:** `{', '.join(blocked)}`")
                     if audit_hash:
-                        st.caption(f"⛓️ **Audit Block Hash:** `{audit_hash[:28]}...`")
+                        st.caption(f"⛓️ **SHA-256 Block Hash:** `{audit_hash[:32]}...`")
 
         st.rerun()
 
 
 # =============================================================================
-# TAB 2: COMPANY RECORDS (DATABASE EXPLORER)
+# TAB 2: DATABASE EXPLORER
 # =============================================================================
 with tab_explorer:
-    st.subheader("🗄️ Company Records & Role Permissions")
-    st.caption("Live relational records from `data/software_company.db`. Switch personas or toggle to Vulnerable Mode to preview restricted records.")
+    st.markdown(
+        """
+        <div style="margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 1.25rem;">🗄️ Relational Database Schema</h3>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0 0;">
+                Live records in <code>data/software_company.db</code> partitioned by role clearance.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     exp_col1, exp_col2 = st.columns([1, 2.5])
     
     with exp_col1:
-        st.markdown("**Select Category:**")
+        st.markdown("**Select Entity:**")
         selected_view_table = st.radio(
             "Tables:",
             options=list(TABLE_METADATA.keys()),
@@ -609,7 +704,7 @@ with tab_explorer:
         meta = TABLE_METADATA[selected_view_table]
         st.markdown(f"**Classification:** `{meta['classification']}`")
         st.markdown(f"**Description:** {meta['description']}")
-        st.markdown(f"**Allowed Roles:** `{', '.join(meta['allowed_roles'])}`")
+        st.markdown(f"**Clearance Required:** `{', '.join(meta['allowed_roles'])}`")
 
     with exp_col2:
         can_view = check_table_access(current_role, selected_view_table)
@@ -622,18 +717,27 @@ with tab_explorer:
                 st.info("No records found in this table.")
         else:
             st.error(
-                f"🔒 ACCESS RESTRICTED: Your active role '{current_role.upper()}' is forbidden from "
-                f"viewing '{selected_view_table}' under enterprise zero-trust policy."
+                f"🔒 ACCESS FORBIDDEN: Your active role '{current_role.upper()}' does not possess clearance "
+                f"for '{selected_view_table}'."
             )
             st.caption("Switch your persona or toggle to Vulnerable Mode to inspect unauthorized records.")
 
 
 # =============================================================================
-# TAB 3: AUDIT LEDGER
+# TAB 3: CRYPTOGRAPHIC AUDIT LOG
 # =============================================================================
 with tab_audit:
-    st.subheader("📜 Cryptographic SIEM Audit Ledger")
-    st.caption("Every query, RBAC decision, and DLP masking event is appended to a SHA-256 tamper-evident hash chain.")
+    st.markdown(
+        """
+        <div style="margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 1.25rem;">📜 Cryptographic Audit Ledger</h3>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0 0;">
+                Tamper-evident SHA-256 Merkle chain in <code>logs/audit.log</code> providing forensic non-repudiation.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     log_path = Path(AUDIT_LOG_FILE)
     if log_path.exists() and log_path.stat().st_size > 0:
@@ -646,7 +750,7 @@ with tab_audit:
             latest_records.reverse()
             
             for rec in latest_records:
-                with st.expander(f"Block Hash: {rec.get('hash', '')[:20]}... | User: {rec.get('user')} | Verdict: {rec.get('outcome').upper()}"):
+                with st.expander(f"Block: {rec.get('hash', '')[:20]}... | User: {rec.get('user')} | Verdict: {rec.get('outcome').upper()}"):
                     st.json(rec)
 
     st.write("")
@@ -658,4 +762,4 @@ with tab_audit:
             st.error(f"❌ INTEGRITY BREACH DETECTED: {msg}")
 
 st.divider()
-st.caption("Nexus Software Systems AI-Vault • 100% Offline Local Inference")
+st.caption("AI-Vault • Zero-Trust Security Gateway • 100% Offline Local LLM")
