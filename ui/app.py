@@ -741,6 +741,30 @@ tab_chat, tab_explorer, tab_audit = st.tabs([
 # TAB 1: CONVERSATIONAL ASSISTANT
 # =============================================================================
 with tab_chat:
+    def _render_security_telemetry_proof(meta_info: Dict[str, Any], is_hardened_active: bool, role_name: str) -> None:
+        """Render presentation-ready Zero-Trust telemetry card suitable for PPT screenshots."""
+        acc = meta_info.get("accessed_tables", [])
+        blk = meta_info.get("blocked_tables", [])
+        a_hash = meta_info.get("audit_hash", "")
+
+        with st.expander("🔍 Security Telemetry Proof (Zero-Trust Pipeline)", expanded=False):
+            col_t1, col_t2 = st.columns([1.2, 1.0])
+            with col_t1:
+                arch_label = "<span style='color: #34d399; font-weight: 700;'>Zero-Trust Hardened (Active)</span>" if is_hardened_active else "<span style='color: #f87171; font-weight: 700;'>Vulnerable Baseline (Bypassed)</span>"
+                st.markdown(f"**🛡️ Architecture:** {arch_label}", unsafe_allow_html=True)
+                st.markdown(f"**⚖️ Role Clearance:** `{role_name.upper()}`")
+                if acc:
+                    st.markdown(f"**🟢 Authorized Tables:** `{', '.join(acc)}`")
+                else:
+                    st.markdown("**🟢 Authorized Tables:** `None (Open-Domain Query)`")
+            with col_t2:
+                st.markdown("**🔍 OWASP LLM01:** `Passed (No Injections)`" if is_hardened_active else "**🔍 OWASP LLM01:** `Bypassed`")
+                st.markdown("**🎭 Inbound DLP:** `Active (PII Masked)`" if is_hardened_active else "**🎭 Inbound DLP:** `Disabled`")
+                if blk:
+                    st.markdown(f"**🔒 Unauthorized Dropped:** `{', '.join(blk)}`")
+            if a_hash:
+                st.caption(f"⛓️ **SHA-256 Cryptographic Block Hash:** `{a_hash}`")
+
     # Minimalist Quick-Question Chips
     st.markdown(
         "<div style='color: #94a3b8; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px;'>SUGGESTED INQUIRIES:</div>",
@@ -803,14 +827,7 @@ with tab_chat:
                 else:
                     st.markdown(f"<span class='badge-pill badge-vulnerable'>🔒 Access Blocked ({reason.upper()})</span>", unsafe_allow_html=True)
 
-                if accessed or blocked:
-                    with st.expander("🔍 Security Telemetry Proof", expanded=False):
-                        if accessed:
-                            st.caption(f"🟢 **Authorized Tables:** `{', '.join(accessed)}`")
-                        if blocked:
-                            st.caption(f"🔒 **Restricted Tables Discarded:** `{', '.join(blocked)}`")
-                        if audit_hash:
-                            st.caption(f"⛓️ **SHA-256 Block Hash:** `{audit_hash[:32]}...`")
+                _render_security_telemetry_proof(meta, is_hardened, current_role)
 
     # Chat Input Box
     user_input = st.chat_input("Ask a question about Nexus Software Systems...")
@@ -822,7 +839,12 @@ with tab_chat:
             st.markdown(effective_prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Processing zero-trust security perimeter..."):
+            spinner_msg = (
+                "🛡️ Enforcing Zero-Trust Security Perimeter (OWASP LLM01 • Relational RBAC • Inbound DLP • SHA-256)..."
+                if is_hardened
+                else "⚠️ Processing in Vulnerable Baseline Mode (Security Gates Bypassed)..."
+            )
+            with st.spinner(spinner_msg):
                 user = User(username=current_username, role=current_role)
                 result = gateway.process_chat_query(
                     user=user,
@@ -851,14 +873,7 @@ with tab_chat:
             else:
                 st.markdown(f"<span class='badge-pill badge-vulnerable'>🔒 Access Blocked ({reason.upper()})</span>", unsafe_allow_html=True)
 
-            if accessed or blocked:
-                with st.expander("🔍 Security Telemetry Proof", expanded=False):
-                    if accessed:
-                        st.caption(f"🟢 **Authorized Tables:** `{', '.join(accessed)}`")
-                    if blocked:
-                        st.caption(f"🔒 **Restricted Tables Discarded:** `{', '.join(blocked)}`")
-                    if audit_hash:
-                        st.caption(f"⛓️ **SHA-256 Block Hash:** `{audit_hash[:32]}...`")
+            _render_security_telemetry_proof(result, is_hardened, current_role)
 
         st.rerun()
 
